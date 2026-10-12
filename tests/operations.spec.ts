@@ -9,6 +9,7 @@ test.beforeEach(async ({ page }) => {
 test('ses, ETA onayı, olay kapatma, takip ve kalıcılık', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await page.goto('/dispatcher');
+  await page.getByRole('tab', { name: 'Mesaj' }).click();
   await expect(page.locator('audio')).toHaveJSProperty('readyState', 4);
   await page.getByRole('button', { name: 'Oynatma hızı' }).click();
   await expect(page.locator('audio')).toHaveJSProperty('playbackRate', 1.2);
@@ -17,10 +18,13 @@ test('ses, ETA onayı, olay kapatma, takip ve kalıcılık', async ({ page, cont
   await page.getByRole('button', { name: 'Ses kaydını duraklat' }).click();
   await expect(page.locator('audio')).toHaveJSProperty('paused', true);
   await expect(page.getByRole('heading', { name: 'MESAJ ÖZETİ ÖRNEK' })).toBeVisible();
+  await page.getByRole('tab', { name: 'Olay' }).click();
   await expect(page.getByText('Son durum')).toBeVisible();
   await expect(page.getByText('Devam ediyor', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Gecikmeyi onayla (+40 dk)', exact: true }).click();
+  await page.getByRole('tab', { name: 'Yol' }).click();
   await expect(page.locator('.telemetry')).toContainText('17:10');
+  await page.getByRole('tab', { name: 'Olay' }).click();
   await expect(page.getByRole('button', { name: 'Gecikme onaylandı (+40 dk)' })).toBeDisabled();
   await page.getByRole('button', { name: 'Müşteri takip linkini kopyala' }).click();
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('http://127.0.0.1:3000/track/v1');
@@ -35,7 +39,9 @@ test('ses, ETA onayı, olay kapatma, takip ve kalıcılık', async ({ page, cont
   await expect(page.locator('.fleet-marker.emergency')).toHaveCount(0);
   await expect(tracking.getByText('Yolda · Olay çözüldü')).toBeVisible();
   await page.reload();
+  await page.getByRole('tab', { name: 'Olay' }).click();
   await expect(page.getByRole('button', { name: 'Olay çözüldü', exact: true })).toBeDisabled();
+  await page.getByRole('tab', { name: 'Yol' }).click();
   await expect(page.locator('.telemetry')).toContainText('17:10');
 });
 
@@ -45,6 +51,7 @@ test('depo süresi sınırda kırmızı olur, not ve başlangıç zamanı korunu
   await page.goto('/dispatcher');
   await page.getByRole('button', { name: 'Mal kabul 1', exact: true }).click();
   await page.locator('.vehicle-card').click();
+  await page.getByRole('tab', { name: 'Olay' }).click();
   await expect(page.getByTestId('waiting-time')).toHaveText('01:48:15');
   await expect(page.getByRole('button', { name: 'Fatura notu oluştur', exact: true })).toHaveCount(0);
   await page.clock.fastForward(704000);
@@ -57,6 +64,7 @@ test('depo süresi sınırda kırmızı olur, not ve başlangıç zamanı korunu
   await page.reload();
   await page.getByRole('button', { name: 'Mal kabul 1', exact: true }).click();
   await page.locator('.vehicle-card').click();
+  await page.getByRole('tab', { name: 'Olay' }).click();
   await expect(page.getByTestId('waiting-time')).toHaveText('02:00:00');
   await expect(page.getByRole('button', { name: 'Fatura notu oluşturuldu' })).toBeDisabled();
   await expect(page.locator('body')).not.toContainText(/Rampa|Rampadayım/);
@@ -65,6 +73,7 @@ test('depo süresi sınırda kırmızı olur, not ve başlangıç zamanı korunu
 test('pano reddinde kopyalanabilir bağlantı ve bulunamayan takip durumu', async ({ page }) => {
   await page.addInitScript(() => { Object.defineProperty(navigator, 'clipboard', { value: { writeText: async () => { throw new Error('Denied'); } } }); });
   await page.goto('/dispatcher');
+  await page.getByRole('tab', { name: 'Olay' }).click();
   await page.getByRole('button', { name: 'Müşteri takip linkini kopyala' }).click();
   await expect(page.getByRole('textbox', { name: 'Takip bağlantısı' })).toHaveValue('http://127.0.0.1:3000/track/v1');
   await page.goto('/track/unknown');

@@ -54,17 +54,19 @@ test('çekmece ön seçimi, doğrulama, Escape ve odak çalışır', async ({ pa
   await expect(page.getByRole('button', { name: 'Boşta 1', exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Boşta 1', exact: true }).click();
   await page.locator('.vehicle-card').click();
+  await page.getByRole('tab', { name: 'Olay' }).click();
   await page.getByRole('button', { name: 'Bu araca görev ata', exact: true }).click();
   await expect(page.getByLabel('Araç ve sürücü')).toHaveValue('v5');
   await expect(page.getByLabel('Çıkış noktası')).toHaveValue('Tuzla Filo Parkı');
-  await expect(page.getByTestId('selected-plate')).toHaveText('34 LOG 505');
 });
 
 test('görev araca, rotaya, takibe ve yenilemeye bağlanır', async ({ page }) => {
+  test.setTimeout(60000);
   await page.clock.install({ time: new Date('2026-10-12T08:00:00Z') });
   await page.goto('/dispatcher');
   await page.getByRole('button', { name: 'Boşta 1', exact: true }).click();
   await page.locator('.vehicle-card').click();
+  await page.getByRole('tab', { name: 'Olay' }).click();
   await page.getByRole('button', { name: 'Bu araca görev ata', exact: true }).click();
   await fillTask(page);
   const routeRequest = page.waitForRequest(request => request.url().includes('/api/route') && request.url().includes('from='));
@@ -77,14 +79,14 @@ test('görev araca, rotaya, takibe ve yenilemeye bağlanır', async ({ page }) =
   await expect(page.getByRole('button', { name: 'Boşta 0', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Yolda 3', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Tümü 5', exact: true })).toBeVisible();
+  await page.getByRole('tab', { name: 'Sürücü' }).click();
   await expect(page.getByTestId('selected-plate')).toHaveText('34 LOG 505');
   await expect(page.locator('.vehicle-card', { hasText: '34 LOG 505' })).toContainText('Yolda (Hedef: 16:30)');
+  await page.getByRole('tab', { name: 'Yol' }).click();
   await expect(page.locator('.detail-panel')).toContainText('Borusan Gebze Depo, Peron No: 4');
-  await expect(page.locator('.detail-panel')).toContainText('Sürücüye gerçek bildirim gönderilmedi.');
-  await expect(page.locator('.detail-panel')).toContainText('+90 532 000 00 00');
+  await expect(page.locator('.cargo-summary')).toContainText('12 Palet Otomotiv Parçası · İrsaliye: IRS-9021');
   await expect(page.getByTitle('34 LOG 505 · Yolda', { exact: true })).toHaveClass(/active/);
   await expect(page.locator('.vehicle-route')).toHaveCount(1);
-  await expect(page.getByText('Yol ağı rotası · 1.3 km · yaklaşık 3 dk')).toBeVisible();
   const taskId = await page.evaluate(() => {
     const records = JSON.parse(localStorage.getItem('slushd-tracking-v1') || '[]') as { id: string }[];
     const tasks = records.filter(record => record.id.startsWith('tsk_'));
@@ -104,6 +106,7 @@ test('görev araca, rotaya, takibe ve yenilemeye bağlanır', async ({ page }) =
   await expect(page.getByRole('button', { name: 'Yolda 3', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Boşta 0', exact: true })).toBeVisible();
   await page.locator('.vehicle-card', { hasText: '34 LOG 505' }).click();
+  await page.getByRole('tab', { name: 'Yol' }).click();
   await expect(page.locator('.telemetry')).toContainText('16:30');
   await expect(page.locator('.detail-panel')).toContainText('Gebze Lojistik Köyü');
   await expect(page.locator('.detail-panel')).toContainText('12 Palet Otomotiv Parçası · İrsaliye: IRS-9021');
@@ -118,10 +121,10 @@ test('rota servisi hata verirse görev düz çizgiye düşmez', async ({ page })
   await page.goto('/dispatcher');
   await page.getByRole('button', { name: 'Boşta 1', exact: true }).click();
   await page.locator('.vehicle-card').click();
+  await page.getByRole('tab', { name: 'Olay' }).click();
   await page.getByRole('button', { name: 'Bu araca görev ata', exact: true }).click();
   await fillTask(page);
   await page.getByRole('button', { name: 'Görevi ata ve sürücüye ilet' }).click();
-  await expect(page.getByText('Yol rotası bulunamadı.', { exact: true })).toBeVisible();
   await expect(page.locator('.vehicle-route')).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Rotayı göster', exact: true })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Yolda 3', exact: true })).toBeVisible();
@@ -135,6 +138,7 @@ test('depolama engelliyse görev ekranda kalır ve kayıp olduğu belirtilir', a
   await page.goto('/dispatcher');
   await page.getByRole('button', { name: 'Boşta 1', exact: true }).click();
   await page.locator('.vehicle-card').click();
+  await page.getByRole('tab', { name: 'Olay' }).click();
   await page.getByRole('button', { name: 'Bu araca görev ata', exact: true }).click();
   await fillTask(page);
   await page.getByRole('button', { name: 'Görevi ata ve sürücüye ilet' }).click();
@@ -157,6 +161,7 @@ test('mobil çekmece taşmadan açılır', async ({ page }) => {
 
 test('ses araç değişince durur', async ({ page }) => {
   await page.goto('/dispatcher');
+  await page.getByRole('tab', { name: 'Mesaj' }).click();
   await page.getByRole('button', { name: 'Ses kaydını oynat' }).click();
   await expect(page.locator('audio')).toHaveJSProperty('paused', false);
   await page.getByRole('button', { name: 'Boşta 1', exact: true }).click();

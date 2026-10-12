@@ -1,4 +1,4 @@
-.drawer-root { position: fixed; inset: 0; z-index: 40; }
+.drawer-root { position: fixed; inset: 0; z-index: 1300; }
 .drawer-backdrop { position: absolute; inset: 0; border: 0; background: rgba(15, 23, 42, .18); }
 .task-drawer { position: absolute; top: 0; right: 0; bottom: 0; width: min(420px, 100%); display: flex; flex-direction: column; background: #fff; border-left: 1px solid #e2e8f0; }
 .drawer-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 20px; border-bottom: 1px solid #e2e8f0; }

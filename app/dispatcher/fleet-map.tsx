@@ -30,7 +30,7 @@ function MapControls({ vehicles, selected, focusRequest, route, routeFitRequest,
   useEffect(() => {
     if (!routeFitRequest || routeFitRequest === fitted.current || selected.id !== routeFitVehicleId || route.length < 2) return;
     fitted.current = routeFitRequest;
-    map.flyToBounds(latLngBounds(route), { padding: [50, 75], maxZoom: 15, animate: animate(), duration: .8 });
+    map.flyToBounds(latLngBounds(route), { paddingTopLeft: [70, 64], paddingBottomRight: [70, 120], maxZoom: 15, animate: animate(), duration: .8 });
   }, [map, route, routeFitRequest, routeFitVehicleId, selected.id]);
   useEffect(() => {
     const observer = new ResizeObserver(() => map.invalidateSize({ pan: false }));
@@ -38,9 +38,9 @@ function MapControls({ vehicles, selected, focusRequest, route, routeFitRequest,
     return () => observer.disconnect();
   }, [map]);
   return <div className="map-controls" onPointerDown={event => event.stopPropagation()} onDoubleClick={event => event.stopPropagation()}>
-    <button type="button" onClick={() => map.flyToBounds(latLngBounds(vehicles.map(v => v.coordinates)), { padding: [45, 65], maxZoom: 12, animate: animate(), duration: .8 })}><Expand size={14} />Tüm filo</button>
+    <button type="button" onClick={() => map.flyToBounds(latLngBounds(vehicles.map(v => v.coordinates)), { paddingTopLeft: [70, 64], paddingBottomRight: [70, 120], maxZoom: 12, animate: animate(), duration: .8 })}><Expand size={14} />Tüm filo</button>
     <button type="button" onClick={() => map.flyTo(selected.coordinates, 15, { animate: animate(), duration: .8 })}><Crosshair size={14} />Araca odaklan</button>
-    <button type="button" disabled={route.length < 2} onClick={() => map.flyToBounds(latLngBounds(route), { padding: [50, 75], maxZoom: 15, animate: animate(), duration: .8 })}><Route size={14} />Rotayı göster</button>
+    <button type="button" disabled={route.length < 2} onClick={() => map.flyToBounds(latLngBounds(route), { paddingTopLeft: [70, 64], paddingBottomRight: [70, 120], maxZoom: 15, animate: animate(), duration: .8 })}><Route size={14} />Rotayı göster</button>
   </div>;
 }
 
@@ -49,7 +49,6 @@ export default function FleetMap(props: Props) {
   const [tileError, setTileError] = useState(false);
   const [tileAttempt, setTileAttempt] = useState(0);
   const [road, setRoad] = useState<{ id: string; data?: RoadRoute; error?: string } | null>(null);
-  const [routeAttempt, setRouteAttempt] = useState(0);
   const routeKey = selected.status === 'idle' ? '' : selected.destinationCoordinates ? `c:${selected.coordinates.join(',')};${selected.destinationCoordinates.join(',')}` : `v:${selected.id}`;
   useEffect(() => {
     if (!routeKey) return;
@@ -65,13 +64,13 @@ export default function FleetMap(props: Props) {
       })
       .catch(error => { if (!controller.signal.aborted) setRoad({ id: routeKey, error: error instanceof Error ? error.message : 'Rota hesaplanamadı.' }); });
     return () => controller.abort();
-  }, [routeKey, routeAttempt]);
+  }, [routeKey]);
   const bounds = useMemo(() => latLngBounds(vehicles.map(vehicle => vehicle.coordinates)), [vehicles]);
   const currentRoad = road?.id === routeKey && selected.status !== 'idle' ? road : null;
   const route = currentRoad?.data?.points ?? [];
   const mapSelected = route.length ? { ...selected, coordinates: route[0] } : selected;
   return <div className="fleet-map-wrapper">
-    <MapContainer bounds={bounds} boundsOptions={{ padding: [45, 65] }} className="fleet-map" minZoom={4} maxZoom={19} zoomControl={false}>
+    <MapContainer bounds={bounds} boundsOptions={{ paddingTopLeft: [70, 64], paddingBottomRight: [70, 120] }} className="fleet-map" minZoom={4} maxZoom={19} zoomControl={false}>
       <TileLayer key={tileAttempt} url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" attribution={'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'} eventHandlers={{ tileerror: () => setTileError(true) }} />
       <MapControls {...props} selected={mapSelected} route={route} />
       {route.length > 1 && <>
@@ -83,10 +82,5 @@ export default function FleetMap(props: Props) {
       </Marker>)}
     </MapContainer>
     {tileError && <div className="tile-error" role="status">Harita zemini yüklenemedi. Araç seçimi kullanılabilir.<button onClick={() => { setTileError(false); setTileAttempt(attempt => attempt + 1); }}>Yeniden dene</button></div>}
-    <div className="map-selection" aria-live="polite"><div className="selected-location"><i className={`dot ${selected.status}`} /><strong className="mono">{selected.plate}</strong><span className="mono">{mapSelected.coordinates.map(c => c.toFixed(4)).join(' / ')}</span></div>
-      <p>{selected.status === 'idle' ? 'Görev bekliyor · Aktif rota yok' : currentRoad?.error ? currentRoad.error : currentRoad?.data ? `Yol ağı rotası · ${(currentRoad.data.distance / 1000).toFixed(1)} km · yaklaşık ${Math.ceil(currentRoad.data.duration / 60)} dk` : 'Yol rotası hesaplanıyor…'}</p>
-      {currentRoad?.data && <><p>OSRM / OSM · Otomobil profili · Canlı trafik ve kamyon kısıtları dahil değil.</p><p>Örnek konum yola eşlendi: {Math.round(currentRoad.data.snappedDistance)} m.</p><p><a href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noreferrer">Harita hatası bildir</a></p></>}
-      {currentRoad?.error && <button onClick={() => setRouteAttempt(value => value + 1)}>Rotayı yeniden dene</button>}
-    </div>
   </div>;
 }

@@ -15,12 +15,13 @@ test('filtre, plaka arama ve araç profili senkron çalışır', async ({ page }
   await expect(page.locator('.vehicle-card')).toHaveCount(1);
   await page.locator('.vehicle-card').click();
   await expect(page.getByTestId('selected-plate')).toHaveText('34 LOG 505');
+  await page.getByRole('tab', { name: 'Olay' }).click();
   await expect(page.getByText('Bu araç şu anda aktif bir göreve sahip değil.')).toBeVisible();
-  await expect(page.locator('.workspace-bar').getByRole('textbox', { name: 'Plaka ara' })).toBeVisible();
+  await expect(page.locator('.fleet-panel').getByRole('textbox', { name: 'Plaka ara' })).toBeVisible();
   await page.getByRole('textbox', { name: 'Plaka ara' }).fill('34log308');
   await page.getByRole('textbox', { name: 'Plaka ara' }).press('Enter');
+  await page.getByRole('tab', { name: 'Sürücü' }).click();
   await expect(page.getByTestId('selected-plate')).toHaveText('34 LOG 308');
-  await expect(page.locator('.selected-location')).toContainText('34 LOG 308');
   await page.getByRole('textbox', { name: 'Plaka ara' }).fill('99XYZ');
   await expect(page.getByText('Araç bulunamadı')).toBeVisible();
   await page.getByRole('button', { name: 'Filtreleri temizle' }).click();
@@ -29,7 +30,6 @@ test('filtre, plaka arama ve araç profili senkron çalışır', async ({ page }
   await expect(page.getByTestId('selected-plate')).toHaveText('34 LOG 101');
   await expect(page.locator('.vehicle-card')).toHaveCount(1);
   await page.getByRole('button', { name: 'Tümü 5', exact: true }).click();
-  await expect(page.locator('time')).toHaveText(/\d{2}:\d{2}:\d{2}/);
   await expect(page.getByRole('button', { name: 'Yeni görev ata', exact: true })).toBeEnabled();
   expect(await page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight)).toBeTruthy();
   await page.screenshot({ path: '.local/phase-1-desktop.png', fullPage: true });

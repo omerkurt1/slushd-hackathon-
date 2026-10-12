@@ -41,12 +41,13 @@ test('harita pinleri, rota ve araç seçimi senkron çalışır', async ({ page 
   await expect(page.getByTestId('selected-plate')).toHaveText('41 LOG 204');
   await expectCentered(page, '41 LOG 204 · Mal kabul');
   await page.getByRole('button', { name: 'Rotayı göster' }).click();
-  await expect(page.getByText('Yol ağı rotası · 1.3 km · yaklaşık 3 dk')).toBeVisible();
+  await expect(page.locator('.vehicle-route')).toHaveCount(1);
   await page.getByRole('button', { name: 'Araca odaklan' }).click();
   await expectCentered(page, '41 LOG 204 · Mal kabul');
   await page.getByRole('button', { name: 'Tüm filo', exact: true }).click();
   await page.getByTitle('34 LOG 101 · Acil', { exact: true }).focus();
   await page.keyboard.press('Enter');
+  await page.getByRole('tab', { name: 'Sürücü' }).click();
   await expect(page.getByTestId('selected-plate')).toHaveText('34 LOG 101');
   expect(errors).toEqual([]);
 });

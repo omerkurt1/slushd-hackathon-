@@ -17,11 +17,12 @@
 .leaflet-tooltip.vehicle-tooltip { border: 1px solid #cbd5e1; background: white; color: #334155; box-shadow: none; border-radius: 3px; font-size: 10px; padding: 5px 7px; }
 .leaflet-container .leaflet-control-attribution { background: white; color: #64748b; font-size: 9px; }
 .leaflet-container .leaflet-control-attribution a { color: #475569; }
-.map-selection { position: absolute; z-index: 500; bottom: 28px; left: 12px; right: 12px; width: fit-content; max-width: calc(100% - 24px); background: white; border: 1px solid #e2e8f0; padding: 10px 12px; border-radius: 4px; }
+.map-selection { position: absolute; z-index: 500; bottom: 64px; left: 50%; transform: translateX(-50%); width: max-content; max-width: min(340px, max(180px, calc(100cqw - 780px))); background: white; border: 1px solid #e2e8f0; padding: 10px 12px; border-radius: 4px; }
+.leaflet-bottom.leaflet-right { left: 50%; right: auto; transform: translateX(-50%); margin: 0; }
 .map-selection button { font-size: 10px; text-decoration: underline; margin-top: 6px; }
 .map-selection .selected-location { border: 0; margin: 0; padding: 0; justify-content: flex-start; }
 .map-selection p { font-size: 9px; color: #64748b; margin-top: 7px; }
-.map-panel .map-legend { padding: 11px 12px; border-top: 1px solid #e2e8f0; background: white; gap: 13px; }
-.tile-error { position: absolute; z-index: 1000; top: 90px; left: 12px; right: 12px; background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: 10px; font-size: 11px; border-radius: 4px; }
-.tile-error button { text-decoration: underline; display: block; margin-top: 6px; }
+.map-panel .map-legend { background: white; }
+.tile-error { position: absolute; z-index: 1000; top: 52px; left: 12px; width: max-content; max-width: min(340px, calc(100% - 24px)); background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: 10px; font-size: 11px; border-radius: 4px; pointer-events: none; }
+.tile-error button { pointer-events: auto; text-decoration: underline; display: block; margin-top: 6px; }
 @media (prefers-reduced-motion: reduce) { .fleet-marker.emergency .marker-halo { animation: none; } }
