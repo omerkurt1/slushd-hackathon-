@@ -1,4 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
+import { mockRoadRoutes } from './route-fixture';
+test.beforeEach(async ({ page }) => mockRoadRoutes(page));
 
 // Interaction tests never pan/zoom against public tile servers.
 const tiles = '**://tile.openstreetmap.org/**';
@@ -39,7 +41,7 @@ test('harita pinleri, rota ve araç seçimi senkron çalışır', async ({ page 
   await expect(page.getByTestId('selected-plate')).toHaveText('41 LOG 204');
   await expectCentered(page, '41 LOG 204 · Mal kabul');
   await page.getByRole('button', { name: 'Rotayı göster' }).click();
-  await expect(page.getByText('Temsili rota · Navigasyon amaçlı değildir')).toBeVisible();
+  await expect(page.getByText('Yol ağı rotası · 1.3 km · yaklaşık 3 dk')).toBeVisible();
   await page.getByRole('button', { name: 'Araca odaklan' }).click();
   await expectCentered(page, '41 LOG 204 · Mal kabul');
   await page.getByRole('button', { name: 'Tüm filo', exact: true }).click();

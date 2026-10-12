@@ -12,13 +12,7 @@ import './map.css';
 type Point = [number, number];
 type Props = { vehicles: Vehicle[]; selected: Vehicle; focusRequest: number; onSelect: (id: string) => void };
 
-// Illustrative waypoints, not road-routing or navigable directions.
-const routeWaypoints: Record<string, Point[]> = {
-  v1: [[41.1004, 29.2731], [41.087, 29.307], [41.051, 29.336], [40.998, 29.398], [40.938, 29.432], [40.854, 29.433]],
-  v2: [[40.8235, 29.4384], [40.8242, 29.442]],
-  v3: [[41.0372, 29.1244], [41.028, 29.136], [41.016, 29.149], [41.008, 29.163]],
-  v4: [[40.7519, 29.5169], [40.768, 29.525], [40.782, 29.535], [40.793, 29.545]],
-};
+type RoadRoute = { points: Point[]; distance: number; duration: number; snappedDistance: number };
 const labels: Record<Status, string> = { emergency: 'Acil', ramp: 'Mal kabul', active: 'Yolda', idle: 'Boşta' };
 const truckSvg = renderToStaticMarkup(<Truck size={18} strokeWidth={1.8} aria-hidden="true" />);
 const markerIcons = Object.fromEntries((Object.keys(labels) as Status[]).map(status => [status,
@@ -48,21 +42,42 @@ export default function FleetMap(props: Props) {
   const { vehicles, selected, onSelect } = props;
   const [tileError, setTileError] = useState(false);
   const [tileAttempt, setTileAttempt] = useState(0);
+  const [road, setRoad] = useState<{ id: string; data?: RoadRoute; error?: string } | null>(null);
+  const [routeAttempt, setRouteAttempt] = useState(0);
+  useEffect(() => {
+    if (selected.status === 'idle') return;
+    const controller = new AbortController();
+    setRoad(null);
+    fetch(`/api/route?vehicle=${encodeURIComponent(selected.id)}`, { signal: controller.signal })
+      .then(async response => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Rota hesaplanamadı.');
+        if (!controller.signal.aborted) setRoad({ id: selected.id, data });
+      })
+      .catch(error => { if (!controller.signal.aborted) setRoad({ id: selected.id, error: error instanceof Error ? error.message : 'Rota hesaplanamadı.' }); });
+    return () => controller.abort();
+  }, [selected.id, selected.status, routeAttempt]);
   const bounds = useMemo(() => latLngBounds(vehicles.map(vehicle => vehicle.coordinates)), [vehicles]);
-  const route = selected.status === 'idle' ? [] : routeWaypoints[selected.id] ?? [];
+  const currentRoad = road?.id === selected.id && selected.status !== 'idle' ? road : null;
+  const route = currentRoad?.data?.points ?? [];
+  const mapSelected = route.length ? { ...selected, coordinates: route[0] } : selected;
   return <div className="fleet-map-wrapper">
     <MapContainer bounds={bounds} boundsOptions={{ padding: [45, 65] }} className="fleet-map" minZoom={4} maxZoom={19} zoomControl={false}>
       <TileLayer key={tileAttempt} url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" attribution={'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'} eventHandlers={{ tileerror: () => setTileError(true) }} />
-      <MapControls {...props} route={route} />
+      <MapControls {...props} selected={mapSelected} route={route} />
       {route.length > 1 && <>
-        <Polyline positions={route} pathOptions={{ color: '#527594', weight: 4, opacity: .85, dashArray: '8 7', className: 'vehicle-route' }}><Tooltip>Temsili rota · {selected.destination}</Tooltip></Polyline>
-        <CircleMarker center={route[route.length - 1]} radius={6} pathOptions={{ color: '#527594', fillColor: '#fff', fillOpacity: 1, weight: 2 }}><Tooltip>Hedef: {selected.destination}</Tooltip></CircleMarker>
+        <Polyline positions={route} smoothFactor={0} pathOptions={{ color: '#3478e5', weight: 5, opacity: .95, dashArray: '10 6', className: 'vehicle-route' }}><Tooltip>Yol ağı rotası · {selected.destination}</Tooltip></Polyline>
+        <CircleMarker center={route[route.length - 1]} radius={6} pathOptions={{ color: '#3478e5', fillColor: '#fff', fillOpacity: 1, weight: 2 }}><Tooltip>Hedef: {selected.destination}</Tooltip></CircleMarker>
       </>}
-      {vehicles.map(vehicle => <Marker key={`${vehicle.id}-${vehicle.status}`} position={vehicle.coordinates} icon={markerIcons[vehicle.status]} title={`${vehicle.plate} · ${labels[vehicle.status]}`} zIndexOffset={vehicle.id === selected.id ? 1000 : vehicle.status === 'emergency' ? 500 : 0} eventHandlers={{ click: () => onSelect(vehicle.id), keydown: event => { if (event.originalEvent.key === 'Enter' || event.originalEvent.key === ' ') { event.originalEvent.preventDefault(); event.originalEvent.stopPropagation(); onSelect(vehicle.id); } } }}>
+      {vehicles.map(vehicle => <Marker key={`${vehicle.id}-${vehicle.status}`} position={vehicle.id === selected.id ? mapSelected.coordinates : vehicle.coordinates} icon={markerIcons[vehicle.status]} title={`${vehicle.plate} · ${labels[vehicle.status]}`} zIndexOffset={vehicle.id === selected.id ? 1000 : vehicle.status === 'emergency' ? 500 : 0} eventHandlers={{ click: () => onSelect(vehicle.id), keydown: event => { if (event.originalEvent.key === 'Enter' || event.originalEvent.key === ' ') { event.originalEvent.preventDefault(); event.originalEvent.stopPropagation(); onSelect(vehicle.id); } } }}>
         <Tooltip key={`${vehicle.id}-${vehicle.id === selected.id}`} permanent={vehicle.id === selected.id} direction="top" className="vehicle-tooltip"><span className="mono">{vehicle.plate}</span>{vehicle.id === selected.id && <span> · Seçili</span>}</Tooltip>
       </Marker>)}
     </MapContainer>
     {tileError && <div className="tile-error" role="status">Harita zemini yüklenemedi. Araç seçimi kullanılabilir.<button onClick={() => { setTileError(false); setTileAttempt(attempt => attempt + 1); }}>Yeniden dene</button></div>}
-    <div className="map-selection" aria-live="polite"><div className="selected-location"><i className={`dot ${selected.status}`} /><strong className="mono">{selected.plate}</strong><span className="mono">{selected.coordinates.map(c => c.toFixed(4)).join(' / ')}</span></div><p>{selected.status === 'idle' ? 'Görev bekliyor · Aktif rota yok' : 'Temsili rota · Navigasyon amaçlı değildir'}</p></div>
+    <div className="map-selection" aria-live="polite"><div className="selected-location"><i className={`dot ${selected.status}`} /><strong className="mono">{selected.plate}</strong><span className="mono">{mapSelected.coordinates.map(c => c.toFixed(4)).join(' / ')}</span></div>
+      <p>{selected.status === 'idle' ? 'Görev bekliyor · Aktif rota yok' : currentRoad?.error ? currentRoad.error : currentRoad?.data ? `Yol ağı rotası · ${(currentRoad.data.distance / 1000).toFixed(1)} km · yaklaşık ${Math.ceil(currentRoad.data.duration / 60)} dk` : 'Yol rotası hesaplanıyor…'}</p>
+      {currentRoad?.data && <><p>OSRM / OSM · Otomobil profili · Canlı trafik ve kamyon kısıtları dahil değil.</p><p>Örnek konum yola eşlendi: {Math.round(currentRoad.data.snappedDistance)} m.</p><p><a href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noreferrer">Harita hatası bildir</a></p></>}
+      {currentRoad?.error && <button onClick={() => setRouteAttempt(value => value + 1)}>Rotayı yeniden dene</button>}
+    </div>
   </div>;
 }

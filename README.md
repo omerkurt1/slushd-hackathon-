@@ -24,8 +24,8 @@ Tarayıcı testleri yerel Chrome kullanır; dev sunucusu ayrıca çalışıyor o
 Her faz uygulanır, yerelde gösterilir ve kontrol edilir. Kullanıcı açıkça onay vermeden commit veya push yapılmaz. Sonraki faza mevcut fazın değerlendirmesinden sonra geçilir.
 
 1. **Konsol temeli:** Beş örnek araç, öncelikli liste, durum filtreleri, plaka araması, seçili araç profili, Türkiye saati, açık tema. Onaylandı; `4fdab8f` commit'i main'e gönderildi.
-2. **Harita:** Leaflet/react-leaflet, OpenStreetMap açık harita katmanı, durum pinleri, acil durum nabzı, flyTo ve temsili rota. Tamamlandı; commit/push onayı bekleniyor.
-3. **Operasyon:** Sentetik Türkçe ses kaydı, örnek transkript/analiz, olay bileti, depo bekleme süresi, tek seferlik ETA onayı, takip bağlantısı, telefon bağlantısı, olay kapatma ve fatura notu taslağı. Tamamlandı; commit/push onayı bekleniyor.
+2. **Harita:** Leaflet/react-leaflet, OpenStreetMap açık harita katmanı, durum pinleri, acil durum nabzı ve flyTo. Faz 3 ile birlikte `1232bcb` commit'i main'e gönderildi.
+3. **Operasyon:** Sentetik Türkçe ses kaydı, örnek transkript/analiz, olay bileti, depo bekleme süresi, tek seferlik ETA onayı, takip bağlantısı, telefon bağlantısı, olay kapatma ve fatura notu taslağı. Onaylandı; `1232bcb` commit'i main'e gönderildi.
 4. **Görev atama:** Drawer formu, doğrulama, idle → active geçişi, yeni görevin takip sayfasına bağlanması ve son kontroller. Bekliyor.
 
 ## Mevcut sınırlar
@@ -44,6 +44,16 @@ Gecikme onayı ETA'yı 40 dakika artırır; tekrar uygulanamaz. Olay kapatma dur
 
 Terim standardı: `TERMINOLOGY.md`. Yeni ekranlar da bu sözlüğü takip eder.
 
-Harita ilk açılışta tüm filoyu gösterir; seçim araca 15 zoom düzeyinde odaklanır. Tüm filo / Araca odaklan / Rotayı göster düğmeleri görünümü değiştirir. Kesikli, mat mavi rotalar örnek ara noktalardır; gerçek yol tarifi, kamyon uygunluğu veya trafik hesabı değildir. Boşta araçta rota çizilmez. Harita zemini internet gerektirir; yüklenemezse tekrar deneme uyarısı gösterilir. Azaltılmış hareket tercihinde nabız ve uçuş animasyonları durdurulur. Leaflet tarayıcıda dinamik yüklenir.
+## Yol ağı rotası düzeltmesi (commit/push onayı bekliyor)
+
+Harita ekran görüntüsündeki standart renkli OpenStreetMap temasını kullanır; gri filtre kaldırılmıştır. İlk açılışta tüm filo, seçimde aracın yakın çevresi gösterilir. Tüm filo / Araca odaklan / Rotayı göster düğmeleri görünümü değiştirir.
+
+`/api/route?vehicle=v1` benzeri istekler örnek aracın başlangıç/hedef koordinatlarını FOSSGIS OSRM otomobil servisine gönderir. `overview=full` GeoJSON geometrisi gerçek OSM yol ağını izler; elle yazılmış ara noktalar yoktur. Seçili pin rotanın yola eşlenmiş başlangıcında gösterilir; eşleme uzaklığı ayrıca belirtilir. Depo adları ve hedef koordinatları halen demo veridir; adres doğrulaması yapılmaz.
+
+Feribot adımı içeren yanıtlar reddedilir. Rota bulunamazsa, servis hata verirse veya 12 saniyede yanıtlamazsa düz çizgi yerine hata/tekrar deneme gösterilir. Araç değişirken önceki istek iptal edilir ve eski rota gizlenir. Boşta araçta rota yoktur. Sabit dört demo güzergâh bir saat sunucu belleğinde önbelleklenir; aynı istekler birleştirilir ve tek süreçte istekler en az 1,1 saniye arayla sıraya konur.
+
+Bu servis otomobil profilidir: kamyon tonajı/yüksekliği, ADR ve canlı trafik içermez. Gösterilen rota süresi trafik hariç tahmindir, operasyonun hedef ETA alanını değiştirmez. Üretim/çoklu sunucu kullanımından önce yönetilen veya kendi rota servisi, kimlik doğrulama ve ortak hız sınırlaması gerekir. Kaynak: https://routing.openstreetmap.de/about.html
+
+Harita zemini internet gerektirir; yüklenemezse tekrar deneme uyarısı gösterilir. Azaltılmış hareket tercihinde nabız ve uçuş animasyonları durdurulur. Leaflet tarayıcıda dinamik yüklenir. Otomatik etkileşim testleri harita ve rota yanıtlarını taklit eder; gerçek servis bağlantısı ayrıca dört demo güzergâhta kontrol edilmiştir.
 
 Masaüstünde ekran sabittir, liste ve detay kendi içinde kayar. Dar ekranlarda liste ve detay dikey düzenlenir; harita alanı gizlenir.

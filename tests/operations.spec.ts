@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import { mockRoadRoutes } from './route-fixture';
+test.beforeEach(async ({ page }) => mockRoadRoutes(page));
 
 test.beforeEach(async ({ page }) => {
   await page.route('**://tile.openstreetmap.org/**', route => route.fulfill({ contentType: 'image/png', body: Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=', 'base64') }));
