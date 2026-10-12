@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Camera, Car, ClipboardList, Clock3, Mic, MoreHorizontal, Phone, TriangleAlert, Truck, Wrench } from 'lucide-react';
+import { Camera, Car, ChevronRight, ClipboardList, Clock3, House, Mic, MoreHorizontal, Phone, Shield, TriangleAlert, Truck, Wrench } from 'lucide-react';
 import { appendSignal, DRIVER_ID, FLEET_SNAPSHOT_KEY, parseSignalLog, readFleetCard, SIGNAL_KEY, type DriverSignal, type FleetCard, type TaskPhase } from './signals';
 import './driver.css';
 
@@ -147,22 +147,22 @@ export default function DriverConsole() {
     <main className="driver-app" data-phase={phase} data-booted={booted ? 'yes' : 'no'}>
       <header className="driver-header">
         <div className="driver-identity">
-          <span className="driver-mark" aria-hidden="true"><Truck size={22} /></span>
-          <div><p className="driver-kicker">Sürücü</p><p className="driver-who">{vehicle.driver} · <span className="mono">{vehicle.plate}</span></p></div>
+          <span className="driver-mark" aria-hidden="true"><Truck size={20} /></span>
+          <div><p className="driver-title">Sürücü</p><p className="driver-who">{vehicle.driver} · <span className="mono">{vehicle.plate}</span></p></div>
         </div>
         <p className="driver-demo">Demo</p>
       </header>
 
-      <section className="driver-card" aria-label="Güncel görev">
-        <div className="driver-task-row">
+      <section className="driver-task" aria-label="Güncel görev">
+        <div className="driver-task-top">
           <div className="driver-task-copy">
-            <p className={`driver-chip ${stage.tone === 'wait' ? 'driver-chip-wait' : stage.tone === 'idle' ? 'driver-chip-idle' : ''}`}>{stage.label}</p>
+            <p className={`driver-chip ${stage.tone === 'wait' ? 'driver-chip-wait' : stage.tone === 'idle' ? 'driver-chip-idle' : ''}`}><i />{stage.label}</p>
             <h1 className="driver-target" data-testid="driver-destination">{hasTask ? vehicle.destination : 'Açık görev yok'}</h1>
-            {(dock || arrival) && <p className="driver-meta">{[dock, arrival ? `Planlanan varış ${arrival}` : null].filter(Boolean).join(' · ')}</p>}
-            {phase === 'DELIVERED' && <p className="driver-note">İrsaliye fotoğrafı bu cihazda onaylandı. Fotoğraf sunucuya gönderilmedi.</p>}
           </div>
-          {hasTask && phase !== 'DELIVERED' && <a className="driver-call" href={`tel:${DEPOT_PHONE}`}><Phone size={20} />Depoyu ara</a>}
+          {hasTask && phase !== 'DELIVERED' && <a className="driver-call" href={`tel:${DEPOT_PHONE}`}><Phone size={18} />Depoyu ara</a>}
         </div>
+        {(dock || arrival) && <p className="driver-meta">{dock && <span><House size={16} />{dock}</span>}{arrival && <span><Clock3 size={16} />Planlanan varış {arrival}</span>}</p>}
+        {phase === 'DELIVERED' && <p className="driver-note">İrsaliye fotoğrafı bu cihazda onaylandı. Fotoğraf sunucuya gönderilmedi.</p>}
       </section>
 
       {notice && <section className="driver-card" aria-label="Son bildirim" data-testid="last-notice" role="status">
@@ -172,12 +172,12 @@ export default function DriverConsole() {
       </section>}
       {persistError && <p className="driver-alert" role="alert">Bildirim bu tarayıcıda saklanamadı.</p>}
 
-      <section className="driver-card" aria-label="Durum bildir">
+      <section className="driver-speak" aria-label="Durum bildir">
         <h2 className="driver-section-title">Durum bildir</h2>
         <div className="driver-mic-wrap">
-          <button type="button" className={`driver-mic ${isRecording ? 'is-recording' : ''} ${processing ? 'is-processing' : ''}`} aria-label="Basılı tut, durumu söyle" aria-pressed={isRecording} onContextMenu={event => event.preventDefault()} onPointerDown={event => { event.preventDefault(); pointerDown.current = true; try { event.currentTarget.setPointerCapture(event.pointerId); } catch { /* Capture is optional. */ } startRecording(); }} onPointerUp={event => { pointerDown.current = false; if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); stopRecording('complete'); }} onPointerCancel={() => { pointerDown.current = false; stopRecording('cancel'); }} onBlur={() => { if (pointerDown.current) return; stopRecording('cancel'); }} onKeyDown={event => { if (event.repeat || (event.key !== ' ' && event.key !== 'Enter')) return; event.preventDefault(); startRecording(); }} onKeyUp={event => { if (event.key !== ' ' && event.key !== 'Enter') return; event.preventDefault(); stopRecording('complete'); }}><Mic size={40} /></button>
+          <button type="button" className={`driver-mic ${isRecording ? 'is-recording' : ''} ${processing ? 'is-processing' : ''}`} aria-label="Basılı tut, durumu söyle" aria-pressed={isRecording} onContextMenu={event => event.preventDefault()} onPointerDown={event => { event.preventDefault(); pointerDown.current = true; try { event.currentTarget.setPointerCapture(event.pointerId); } catch { /* Capture is optional. */ } startRecording(); }} onPointerUp={event => { pointerDown.current = false; if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); stopRecording('complete'); }} onPointerCancel={() => { pointerDown.current = false; stopRecording('cancel'); }} onBlur={() => { if (pointerDown.current) return; stopRecording('cancel'); }} onKeyDown={event => { if (event.repeat || (event.key !== ' ' && event.key !== 'Enter')) return; event.preventDefault(); startRecording(); }} onKeyUp={event => { if (event.key !== ' ' && event.key !== 'Enter') return; event.preventDefault(); stopRecording('complete'); }}><Mic size={36} /></button>
           <p className="driver-caption">Basılı tut, durumu söyle</p>
-          <p className="driver-note">Yalnızca güvenli duruşta kullan</p>
+          <p className="driver-note driver-safety"><Shield size={15} />Yalnızca güvenli duruşta kullan</p>
           <p className="driver-timer" aria-hidden="true">{isRecording ? `Kayıt alınıyor ${String(Math.floor(elapsed / 60)).padStart(2, '0')}:${String(elapsed % 60).padStart(2, '0')}` : processing ? 'Örnek bildirim hazırlanıyor' : ''}</p>
         </div>
       </section>
@@ -186,17 +186,17 @@ export default function DriverConsole() {
       <section className="driver-block" aria-label="Hızlı bildirim">
         <h2 className="driver-block-title">Hızlı bildirim</h2>
         <div className="driver-grid">
-          <button type="button" className="driver-choice" onClick={() => publish({ type: 'traffic', summary: 'Trafik', detail: 'Trafik yoğunluğu' })}><Car size={22} />Trafik</button>
-          <button type="button" className="driver-choice" onClick={() => publish({ type: 'breakdown', summary: 'Arıza', detail: 'Acil teknik destek' })}><Wrench size={22} />Arıza</button>
-          <button type="button" className="driver-choice" onClick={() => publish({ type: 'gate', summary: 'Depoda bekleme', detail: 'Depo giriş sırası' })}><Clock3 size={22} />Depoda bekleme</button>
-          <button ref={moreButtonRef} type="button" className="driver-choice" aria-expanded={moreOpen} aria-controls="more-panel" onClick={() => setMoreOpen(true)}><MoreHorizontal size={22} />Diğer</button>
+          <button type="button" className="driver-choice" onClick={() => publish({ type: 'traffic', summary: 'Trafik', detail: 'Trafik yoğunluğu' })}><span className="driver-well driver-well-amber" aria-hidden="true"><Car size={22} /></span>Trafik</button>
+          <button type="button" className="driver-choice" onClick={() => publish({ type: 'breakdown', summary: 'Arıza', detail: 'Acil teknik destek' })}><span className="driver-well driver-well-slate" aria-hidden="true"><Wrench size={22} /></span>Arıza</button>
+          <button type="button" className="driver-choice" onClick={() => publish({ type: 'gate', summary: 'Depoda bekleme', detail: 'Depo giriş sırası' })}><span className="driver-well driver-well-sage" aria-hidden="true"><Clock3 size={22} /></span>Depoda bekleme</button>
+          <button ref={moreButtonRef} type="button" className="driver-choice" aria-expanded={moreOpen} aria-controls="more-panel" onClick={() => setMoreOpen(true)}><span className="driver-well driver-well-neutral" aria-hidden="true"><MoreHorizontal size={22} /></span>Diğer<ChevronRight size={18} className="driver-chevron" /></button>
         </div>
       </section>
 
-      <section className="driver-card" aria-label="Görev adımı">
+      <section className="driver-block" aria-label="Görev adımı">
         <h2 className="driver-block-title">Görev adımı</h2>
-        {phase === 'EN_ROUTE' && hasTask && <button ref={stepButtonRef} type="button" className="driver-step" onClick={() => { setPhase('AT_RAMP'); publish({ type: 'at_ramp', summary: 'Mal kabuldeyim', detail: 'Mal kabulde bekliyor', location: vehicle.destination }); }}><ClipboardList size={22} />Mal kabuldeyim</button>}
-        {phase === 'AT_RAMP' && <button ref={stepButtonRef} type="button" className="driver-step" onClick={() => { setPhoto(''); setPhotoOpen(true); }}><ClipboardList size={22} />Teslim ettim</button>}
+        {phase === 'EN_ROUTE' && hasTask && <button ref={stepButtonRef} type="button" className="driver-step" onClick={() => { setPhase('AT_RAMP'); publish({ type: 'at_ramp', summary: 'Mal kabuldeyim', detail: 'Mal kabulde bekliyor', location: vehicle.destination }); }}><span className="driver-well driver-well-mint" aria-hidden="true"><ClipboardList size={22} /></span>Mal kabuldeyim</button>}
+        {phase === 'AT_RAMP' && <button ref={stepButtonRef} type="button" className="driver-step" onClick={() => { setPhoto(''); setPhotoOpen(true); }}><span className="driver-well driver-well-mint" aria-hidden="true"><ClipboardList size={22} /></span>Teslim ettim<ChevronRight size={18} className="driver-chevron" /></button>}
         {phase === 'DELIVERED' && <p className="driver-note">Görev tamamlandı. Teslim bilgisi bu tarayıcıdaki operasyon kaydına yazıldı.</p>}
         {!hasTask && <p className="driver-note">Bu araç için sıradaki görev adımı yok.</p>}
       </section>
