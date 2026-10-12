@@ -1,15 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { ArrowDown, ArrowUpRight, ChevronRight, Clock3, MapPin, Navigation, Plus, Radio, Search, ShieldAlert, Truck, UserRound, X } from 'lucide-react';
 import Operations, { delayedEta, type Operation } from './operations';
+import TaskDrawer from './task-drawer';
+import { applyAssignment, parseAssignment, type Assignment, type AssignmentInput } from './assignment';
 
 export type Status = 'emergency' | 'ramp' | 'active' | 'idle';
 export type Vehicle = {
   id: string; plate: string; driver: string; phone: string; status: Status;
   origin: string; destination: string; location: string; speed: number;
-  coordinates: [number, number]; eta: string; detail: string; cargo: string;
+  coordinates: [number, number]; destinationCoordinates?: [number, number]; eta: string; detail: string; cargo: string;
+  taskId?: string; recipientName?: string; recipientPhone?: string;
 };
 
 const initialVehicles: Vehicle[] = [
@@ -24,26 +27,39 @@ const statuses: Record<Status, { label: string; short: string }> = {
   active: { label: 'Yolda', short: 'Yolda' }, idle: { label: 'Boşta', short: 'Boşta' },
 };
 const priority: Record<Status, number> = { emergency: 0, ramp: 1, active: 2, idle: 3 };
+type FleetOperation = Operation & { assignment?: Assignment };
 const normalize = (value: string) => value.toLocaleLowerCase('tr-TR').replace(/\s+/g, '');
 const FleetMap = dynamic(() => import('./fleet-map'), { ssr: false, loading: () => <div className="map-loading" role="status">Harita yükleniyor…</div> });
 
 export default function Dispatcher() {
   const [vehicles, setVehicles] = useState(initialVehicles);
-  const [operations, setOperations] = useState<Record<string, Operation>>({});
+  const [operations, setOperations] = useState<Record<string, FleetOperation>>({});
   const [now, setNow] = useState(0);
   const [ready, setReady] = useState(false);
+  const [persistError, setPersistError] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [presetVehicleId, setPresetVehicleId] = useState('');
+  const [routeFit, setRouteFit] = useState({ token: 0, vehicleId: '' });
+  const assignLock = useRef(false);
+  const openerRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
     const started = Date.now();
-    const defaults = Object.fromEntries(initialVehicles.map(v => [v.id, { delayApproved: false, resolved: false, waitingSince: v.status === 'ramp' ? started - 6495 * 1000 : 0, invoiceNote: '' }]));
+    const defaults: Record<string, FleetOperation> = Object.fromEntries(initialVehicles.map(v => [v.id, { delayApproved: false, resolved: false, waitingSince: v.status === 'ramp' ? started - 6495 * 1000 : 0, invoiceNote: '' }]));
     try {
       const saved = JSON.parse(localStorage.getItem('slushd-operations-v1') ?? 'null');
       for (const id of Object.keys(defaults)) {
         const entry = saved?.[id];
-        if (entry && typeof entry.delayApproved === 'boolean' && typeof entry.resolved === 'boolean' && Number.isFinite(entry.waitingSince) && entry.waitingSince >= 0 && entry.waitingSince <= started && typeof entry.invoiceNote === 'string') defaults[id] = entry;
+        if (!entry || typeof entry.delayApproved !== 'boolean' || typeof entry.resolved !== 'boolean' || !Number.isFinite(entry.waitingSince) || entry.waitingSince < 0 || entry.waitingSince > started || typeof entry.invoiceNote !== 'string') continue;
+        const assignment = parseAssignment(entry.assignment);
+        defaults[id] = { delayApproved: entry.delayApproved, resolved: entry.resolved, waitingSince: entry.waitingSince, invoiceNote: entry.invoiceNote, ...(assignment ? { assignment } : {}) };
       }
     } catch { /* An unavailable or invalid store falls back to the demo. */ }
     setOperations(defaults);
-    setVehicles(initialVehicles.map(v => ({ ...v, eta: defaults[v.id].delayApproved ? delayedEta(v.eta, 40) : v.eta, status: defaults[v.id].resolved && v.status === 'emergency' ? 'active' : v.status, detail: defaults[v.id].resolved ? 'Olay çözüldü' : v.detail })));
+    setVehicles(initialVehicles.map(v => {
+      const saved = defaults[v.id];
+      const next = { ...v, eta: saved.delayApproved ? delayedEta(v.eta, 40) : v.eta, status: saved.resolved && v.status === 'emergency' ? 'active' as const : v.status, detail: saved.resolved ? 'Olay çözüldü' : v.detail };
+      return saved.assignment && v.status === 'idle' ? applyAssignment(next, saved.assignment) : next;
+    }));
     setNow(started); setReady(true);
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
@@ -52,8 +68,9 @@ export default function Dispatcher() {
     if (!ready) return;
     try {
       localStorage.setItem('slushd-operations-v1', JSON.stringify(operations));
-      localStorage.setItem('slushd-tracking-v1', JSON.stringify(vehicles.filter(v => v.status !== 'idle').map(v => ({ id: v.id, plate: v.plate, eta: v.eta, location: v.location, destination: v.destination, status: statuses[v.status].label, detail: v.detail }))));
-    } catch { /* Browser storage is optional; operations still work in memory. */ }
+      localStorage.setItem('slushd-tracking-v1', JSON.stringify(vehicles.filter(v => v.status !== 'idle').map(v => ({ id: v.taskId ?? v.id, plate: v.plate, eta: v.eta, location: v.location, destination: v.destination, status: statuses[v.status].label, detail: v.detail }))));
+      setPersistError(false);
+    } catch { setPersistError(true); }
   }, [ready, operations, vehicles]);
   const [selectedVehicleId, setSelectedVehicleId] = useState('v1');
   const [focusRequest, setFocusRequest] = useState(0);
@@ -88,6 +105,33 @@ export default function Dispatcher() {
   const matches = vehicles.filter(vehicle => normalize(vehicle.plate).includes(normalize(query)));
   const visible = vehicles.filter(vehicle => (filter === 'all' || vehicle.status === filter) && matches.includes(vehicle)).sort((a, b) => priority[a.status] - priority[b.status]);
   const selectVehicle = (id: string) => { setSelectedVehicleId(id); setFocusRequest(request => request + 1); };
+  function openTaskDrawer(vehicleId: string, opener: HTMLElement) {
+    assignLock.current = false;
+    openerRef.current = opener;
+    setPresetVehicleId(vehicleId);
+    setDrawerOpen(true);
+  }
+  function closeTaskDrawer() {
+    setDrawerOpen(false);
+    const opener = openerRef.current;
+    requestAnimationFrame(() => opener?.focus());
+  }
+  function assignTask(input: AssignmentInput) {
+    if (assignLock.current) return false;
+    const vehicle = vehicles.find(item => item.id === input.vehicleId);
+    if (!vehicle || vehicle.status !== 'idle') return false;
+    assignLock.current = true;
+    const assignment: Assignment = { taskId: `tsk_${crypto.randomUUID()}`, origin: input.origin, originCoordinates: input.originCoordinates, destination: input.destination, destinationCoordinates: input.destinationCoordinates, eta: input.eta, recipientName: input.recipientName, recipientPhone: input.recipientPhone, cargo: input.cargo };
+    setVehicles(current => current.map(item => item.id === vehicle.id && item.status === 'idle' ? applyAssignment(item, assignment) : item));
+    setOperations(current => ({ ...current, [input.vehicleId]: { ...(current[input.vehicleId] ?? { delayApproved: false, resolved: false, waitingSince: 0, invoiceNote: '' }), assignment } }));
+    setSelectedVehicleId(input.vehicleId);
+    setFocusRequest(request => request + 1);
+    setRouteFit(current => ({ token: current.token + 1, vehicleId: input.vehicleId }));
+    setFilter('all');
+    setQuery('');
+    setDrawerOpen(false);
+    return true;
+  }
 
   return (
     <main className="console-shell">
@@ -99,7 +143,7 @@ export default function Dispatcher() {
 
       <section className="workspace-bar">
         <div><div className="eyebrow">FİLO YÖNETİMİ</div><h1>Operasyon merkezi</h1></div>
-        <div className="workspace-actions"><div className="clock"><Clock3 size={15} /><time className="mono">{clock}</time><span>TR</span></div><span className="demo-label"><Radio size={13} />Demo veri</span><button className="primary-button" disabled title="Görev atama Faz 4’te eklenecek"><Plus size={16} />Yeni görev ata<span className="phase-chip">Faz 4</span></button></div>
+        <div className="workspace-actions"><div className="clock"><Clock3 size={15} /><time className="mono">{clock}</time><span>TR</span></div><span className="demo-label"><Radio size={13} />Demo veri</span><button className="primary-button" disabled={!ready} onClick={event => openTaskDrawer('', event.currentTarget)}><Plus size={16} />Yeni görev ata</button></div>
       </section>
 
       <div className="workspace-grid">
@@ -113,7 +157,7 @@ export default function Dispatcher() {
 
         <section className="map-panel" aria-label="Harita alanı">
           <div className="panel-heading"><h2><Navigation size={15} />Operasyon sahası</h2><span className="region-label">MARMARA</span></div>
-          {showMap && <FleetMap vehicles={vehicles} selected={selected} focusRequest={focusRequest} onSelect={id => { selectVehicle(id); setFilter('all'); setQuery(''); }} />}
+          {showMap && <FleetMap vehicles={vehicles} selected={selected} focusRequest={focusRequest} routeFitRequest={routeFit.token} routeFitVehicleId={routeFit.vehicleId} onSelect={id => { selectVehicle(id); setFilter('all'); setQuery(''); }} />}
           <div className="map-legend">{(Object.keys(statuses) as Status[]).map(status => <span key={status}><i className={`dot ${status}`} />{statuses[status].label}</span>)}</div>
           <div className="map-note"><ShieldAlert size={16} /><div><strong>Operasyon önceliği</strong><span>{counts.emergency ? `${counts.emergency} araç için olay bildirimi bulunuyor.` : 'Açık olay bildirimi bulunmuyor.'}</span></div>{firstIncident && <button onClick={() => { setFilter('emergency'); setQuery(''); selectVehicle(firstIncident.id); }}>İncele <ArrowUpRight size={14} /></button>}</div>
         </section>
@@ -127,11 +171,13 @@ export default function Dispatcher() {
             {ready && selected.status !== 'idle' && <Operations vehicle={selected} operation={selectedOperation} now={now} onApprove={approveDelay} onResolve={resolveIncident} onInvoice={note => setOperations(current => ({ ...current, [selected.id]: { ...current[selected.id], invoiceNote: current[selected.id].invoiceNote || note } }))} />}
             <section className="detail-section"><h3>GÜZERGAH BİLGİSİ</h3><div className="route"><div><span className="route-dot" /><small>ÇIKIŞ NOKTASI</small><strong>{selected.origin}</strong></div><div><span className="route-square" /><small>TESLİMAT NOKTASI</small><strong>{selected.destination}</strong></div></div><div className="location-box"><MapPin size={15} /><div><strong>{selected.location}</strong><span className="mono">{selected.coordinates.map(c => c.toFixed(4)).join(', ')}</span></div></div></section>
             <section className="detail-section"><h3>YÜK BİLGİSİ</h3><p className="cargo"><Truck size={15} />{selected.cargo}</p></section>
-            {selected.status === 'idle' && <section className="detail-section"><h3>OPERASYON DURUMU</h3><div className="status-note"><strong>Yeni göreve hazır</strong><p>Bu araç şu anda aktif bir göreve sahip değil.</p><button className="secondary-button" disabled title="Faz 4’te eklenecek"><Plus size={15} />Bu araca görev ata · Faz 4</button></div></section>}
+            {selected.taskId && <section className="detail-section"><h3>GÖREV KAYDI</h3><p className="cargo">Takip kaydı <span className="mono">{selected.taskId}</span></p>{selected.recipientName && <p className="cargo">Alıcı: {selected.recipientName}{selected.recipientPhone ? <span className="mono"> · {selected.recipientPhone}</span> : null}</p>}<p className="operation-caption">Demo kaydıdır. Sürücüye gerçek bildirim gönderilmedi.</p></section>}
+            {selected.status === 'idle' && <section className="detail-section"><h3>OPERASYON DURUMU</h3><div className="status-note"><strong>Yeni göreve hazır</strong><p>Bu araç şu anda aktif bir göreve sahip değil.</p><button className="secondary-button" disabled={!ready} onClick={event => openTaskDrawer(selected.id, event.currentTarget)}><Plus size={15} />Bu araca görev ata</button></div></section>}
           </div>
         </aside>
       </div>
-      <footer className="statusbar"><span><i className="dot idle" />Simülasyon ortamı · Canlı GPS bağlantısı yok</span><span>Faz 03 / 04<span className="footer-divider">|</span>SLUSHD Dispatcher <span className="mono">v0.3</span></span></footer>
+      <TaskDrawer open={drawerOpen} vehicles={vehicles} presetVehicleId={presetVehicleId} now={now} onClose={closeTaskDrawer} onAssign={assignTask} />
+      <footer className="statusbar"><span><i className="dot idle" />Simülasyon ortamı · Canlı GPS bağlantısı yok</span>{persistError && <span role="status">Kayıt bu tarayıcıda saklanamadı. Yenilemede görev kaybolur.</span>}<span>Faz 04<span className="footer-divider">|</span>SLUSHD Dispatcher <span className="mono">v0.4</span></span></footer>
     </main>
   );
 }

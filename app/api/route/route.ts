@@ -5,44 +5,65 @@ const trips: Record<string, [Point, Point]> = {
   v3: [[41.0372, 29.1244], [41.008, 29.163]],
   v4: [[40.7519, 29.5169], [40.793, 29.545]],
 };
+const upstream = 'https://routing.openstreetmap.de/routed-car/route/v1/driving';
 type Result = { points: Point[]; distance: number; duration: number; snappedDistance: number };
 const cache = new Map<string, { expires: number; result: Result }>();
 const pending = new Map<string, Promise<Result>>();
 let queue: Promise<unknown> = Promise.resolve();
 let lastRequest = 0;
 
-async function calculate(id: string): Promise<Result> {
+function parsePoint(value: string | null): Point | null {
+  if (!value || !/^-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?$/.test(value)) return null;
+  const [lat, lng] = value.split(',').map(Number);
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  return [Math.round(lat * 1e6) / 1e6, Math.round(lng * 1e6) / 1e6];
+}
+
+async function calculate(key: string, start: Point, end: Point): Promise<Result> {
   const wait = Math.max(0, 1100 - (Date.now() - lastRequest));
   if (wait) await new Promise(resolve => setTimeout(resolve, wait));
   lastRequest = Date.now();
-  const coordinates = trips[id].map(([lat, lng]) => `${lng},${lat}`).join(';');
-  const response = await fetch(`https://routing.openstreetmap.de/routed-car/route/v1/driving/${coordinates}?overview=full&geometries=geojson&steps=true&radiuses=2000;2000`, {
-    signal: AbortSignal.timeout(12000), cache: 'no-store', headers: { 'User-Agent': 'Slushd-Dispatcher-Demo/0.3 (https://github.com/omerkurt1/slushd-hackathon-)' },
+  const coordinates = [start, end].map(([lat, lng]) => `${lng},${lat}`).join(';');
+  const response = await fetch(`${upstream}/${coordinates}?overview=full&geometries=geojson&steps=true&radiuses=2000;2000`, {
+    signal: AbortSignal.timeout(12000), cache: 'no-store', headers: { 'User-Agent': 'Slushd-Dispatcher-Demo/0.4 (https://github.com/omerkurt1/slushd-hackathon-)' },
   });
   if (!response.ok) throw new Error('Rota servisine ulaşılamadı.');
   const data = await response.json();
   const route = data.routes?.[0];
   if (data.code !== 'Ok' || !route || route.geometry?.type !== 'LineString' || !Array.isArray(route.geometry.coordinates) || route.geometry.coordinates.length < 2) throw new Error('Bu noktalar arasında yol rotası bulunamadı.');
-  // The public car profile cannot exclude ferries; reject any ferry leg instead.
   if (route.legs?.some((leg: { steps?: { mode: string }[] }) => leg.steps?.some(step => step.mode === 'ferry'))) throw new Error('Bu rota feribot içeriyor; kara yolu rotası doğrulanamadı.');
   if (!route.geometry.coordinates.every((point: unknown) => Array.isArray(point) && point.length === 2 && point.every(Number.isFinite) && Math.abs(point[0]) <= 180 && Math.abs(point[1]) <= 90) || !Number.isFinite(route.distance) || !Number.isFinite(route.duration)) throw new Error('Geçersiz rota yanıtı.');
   const result: Result = { points: route.geometry.coordinates.map(([lng, lat]: Point) => [lat, lng]), distance: route.distance, duration: route.duration, snappedDistance: data.waypoints?.[0]?.distance ?? 0 };
-  cache.set(id, { expires: Date.now() + 3600000, result });
+  cache.set(key, { expires: Date.now() + 3600000, result });
   return result;
 }
 
-export async function GET(request: Request) {
-  const id = new URL(request.url).searchParams.get('vehicle') ?? '';
+function readPair(params: URLSearchParams): { key: string; start: Point; end: Point } | Response {
+  if (params.has('from') || params.has('to')) {
+    const start = parsePoint(params.get('from'));
+    const end = parsePoint(params.get('to'));
+    if (!start || !end) return Response.json({ error: 'Geçersiz koordinat. Enlem -90 ile 90, boylam -180 ile 180 arasında olmalıdır.' }, { status: 400 });
+    if (start[0] === end[0] && start[1] === end[1]) return Response.json({ error: 'Çıkış ve hedef aynı nokta. Yol rotası hesaplanamaz.' }, { status: 400 });
+    return { key: `${start[0]},${start[1]};${end[0]},${end[1]}`, start, end };
+  }
+  const id = params.get('vehicle') ?? '';
   if (!Object.hasOwn(trips, id)) return Response.json({ error: 'Araç için tanımlı rota bulunamadı.' }, { status: 400 });
-  const stored = cache.get(id);
+  const [start, end] = trips[id];
+  return { key: `vehicle:${id}`, start, end };
+}
+
+export async function GET(request: Request) {
+  const pair = readPair(new URL(request.url).searchParams);
+  if (pair instanceof Response) return pair;
+  const stored = cache.get(pair.key);
   if (stored && stored.expires > Date.now()) return Response.json(stored.result);
   try {
-    let work = pending.get(id);
+    let work = pending.get(pair.key);
     if (!work) {
-      work = queue.then(() => calculate(id));
+      work = queue.then(() => calculate(pair.key, pair.start, pair.end));
       queue = work.catch(() => undefined);
-      pending.set(id, work);
-      void work.finally(() => pending.delete(id)).catch(() => undefined);
+      pending.set(pair.key, work);
+      void work.finally(() => pending.delete(pair.key)).catch(() => undefined);
     }
     return Response.json(await work);
   } catch (error) {

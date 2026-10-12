@@ -1,0 +1,19 @@
+.drawer-root { position: fixed; inset: 0; z-index: 40; }
+.drawer-backdrop { position: absolute; inset: 0; border: 0; background: rgba(15, 23, 42, .18); }
+.task-drawer { position: absolute; top: 0; right: 0; bottom: 0; width: min(420px, 100%); display: flex; flex-direction: column; background: #fff; border-left: 1px solid #e2e8f0; }
+.drawer-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 20px; border-bottom: 1px solid #e2e8f0; }
+.drawer-header h2 { font-size: 18px; font-weight: 650; letter-spacing: -.4px; margin-top: 4px; }
+.drawer-header button { width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid #e2e8f0; border-radius: 4px; color: #64748b; background: #fff; }
+.task-form { overflow: auto; padding: 18px 20px 28px; display: grid; gap: 6px; align-content: start; }
+.task-form label { margin-top: 8px; font-size: 11px; font-weight: 650; color: #334155; }
+.task-form label span { font-weight: 400; color: #64748b; }
+.task-form input, .task-form select, .task-form textarea { width: 100%; min-width: 0; border: 1px solid #e2e8f0; border-radius: 4px; background: #fff; color: #0f172a; padding: 9px 10px; font: inherit; font-size: 12px; }
+.task-form textarea { resize: vertical; }
+.task-form input[aria-invalid='true'], .task-form select[aria-invalid='true'], .task-form textarea[aria-invalid='true'] { border-color: #fecaca; }
+.field-error { color: #b91c1c; font-size: 11px; line-height: 1.5; }
+.field-hint { color: #64748b; font-size: 10px; line-height: 1.5; }
+.drawer-note { margin-top: 12px; padding: 10px; border: 1px solid #e2e8f0; background: #f8fafc; color: #64748b; font-size: 11px; line-height: 1.6; }
+.assign-button { margin-top: 8px; border: 1px solid #166534; background: #166534; color: #fff; border-radius: 4px; padding: 11px 12px; font-size: 12px; font-weight: 650; }
+.assign-button:hover { background: #14532d; }
+.assign-button:disabled { background: #f1f5f9; border-color: #e2e8f0; color: #64748b; }
+@media (max-width: 600px) { .task-drawer { width: 100%; } .task-form { padding: 14px 14px 24px; } }

@@ -16,6 +16,9 @@ test('ses, ETA onayı, olay kapatma, takip ve kalıcılık', async ({ page, cont
   await expect(page.locator('audio')).toHaveJSProperty('paused', false);
   await page.getByRole('button', { name: 'Ses kaydını duraklat' }).click();
   await expect(page.locator('audio')).toHaveJSProperty('paused', true);
+  await expect(page.getByRole('heading', { name: 'MESAJ ÖZETİ ÖRNEK' })).toBeVisible();
+  await expect(page.getByText('Son durum')).toBeVisible();
+  await expect(page.getByText('Devam ediyor', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Gecikmeyi onayla (+40 dk)', exact: true }).click();
   await expect(page.locator('.telemetry')).toContainText('17:10');
   await expect(page.getByRole('button', { name: 'Gecikme onaylandı (+40 dk)' })).toBeDisabled();
@@ -26,6 +29,7 @@ test('ses, ETA onayı, olay kapatma, takip ve kalıcılık', async ({ page, cont
   await tracking.goto('/track/v1');
   await expect(tracking.getByText('17:10', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Olayı çözüldü olarak kapat' }).click();
+  await expect(page.getByText('Bitti', { exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Acil 0', exact: true })).toBeVisible();
   await expect(page.getByTitle('34 LOG 101 · Yolda', { exact: true })).toHaveClass(/active/);
   await expect(page.locator('.fleet-marker.emergency')).toHaveCount(0);

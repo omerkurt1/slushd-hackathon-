@@ -36,7 +36,9 @@ test('araç değiştiğinde geç gelen eski rota gösterilmez', async ({ page })
   await expect(page.getByText('Yol ağı rotası · 1.3 km · yaklaşık 3 dk')).toBeVisible();
 });
 
-test('API bilinmeyen araç kimliğini reddeder', async ({ request }) => {
-  const response = await request.get('/api/route?vehicle=unknown');
-  expect(response.status()).toBe(400);
+test('API bilinmeyen araç kimliğini ve geçersiz koordinatı reddeder', async ({ request }) => {
+  expect((await request.get('/api/route?vehicle=unknown')).status()).toBe(400);
+  expect((await request.get('/api/route?from=91,29&to=40.8,29.4')).status()).toBe(400);
+  expect((await request.get('/api/route?from=40.8,29.4&to=40.8,29.4')).status()).toBe(400);
+  expect((await request.get('/api/route?from=abc&to=40.8,29.4')).status()).toBe(400);
 });

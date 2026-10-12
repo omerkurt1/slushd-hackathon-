@@ -38,7 +38,7 @@ export default function Operations({ vehicle, operation, now, onApprove, onResol
     else try { await audio.current.play(); setMessage(''); } catch { setMessage('Ses oynatılamadı. Yeniden deneyin; transkript aşağıda.'); }
   }
   async function copyLink() {
-    const url = new URL(`/track/${vehicle.id}`, window.location.origin).href;
+    const url = new URL(`/track/${vehicle.taskId ?? vehicle.id}`, window.location.origin).href;
     try { await navigator.clipboard.writeText(url); setMessage('Demo takip bağlantısı kopyalandı.'); setFallbackLink(''); }
     catch { setFallbackLink(url); setMessage('Panoya erişilemedi. Bağlantıyı aşağıdan kopyalayın.'); }
   }
@@ -48,10 +48,10 @@ export default function Operations({ vehicle, operation, now, onApprove, onResol
       <audio ref={audio} src="/audio/driver-report-demo.wav" preload="metadata" onLoadedMetadata={event => setLength(event.currentTarget.duration)} onTimeUpdate={event => setSeconds(event.currentTarget.currentTime)} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)} onError={() => setMessage('Örnek ses kaydı yüklenemedi. Transkripti kullanabilirsiniz.')} />
       <div className="audio-controls"><button onClick={toggleAudio} aria-label={playing ? 'Ses kaydını duraklat' : 'Ses kaydını oynat'}>{playing ? <Pause size={15} /> : <Play size={15} />}{playing ? 'Duraklat' : 'Oynat'}</button><span className="mono">{duration(seconds).slice(3)} / {duration(length).slice(3)}</span><button aria-label="Oynatma hızı" onClick={() => { const next = speed === 1 ? 1.2 : 1; setSpeed(next); if (audio.current) audio.current.playbackRate = next; }}>{speed.toFixed(1)}x</button></div>
       <p className="operation-caption">Sentetik demo kayıt · Gerçek sürücü kaydı değildir.</p>
-      <h3 className="report-subtitle">YAPAY ZEKA İSTİSNA ANALİZİ <span>ÖRNEK</span></h3>
+      <h3 className="report-subtitle">MESAJ ÖZETİ <span>ÖRNEK</span></h3>
       <blockquote>“Kuzey Marmara çıkışında zincirleme kaza var, yol tıkandı, 40 dakika durduk.”</blockquote>
-      <dl className="incident-ticket"><div><dt>Olay</dt><dd>Trafik tıkanıklığı</dd></div><div><dt>Öngörülen sapma</dt><dd className="mono">+40 dk</dd></div><div><dt>Öncelik</dt><dd>Yüksek</dd></div><div><dt>Bilet durumu</dt><dd>{operation.resolved ? 'Çözüldü' : 'Açık'}</dd></div></dl>
-      <p className="operation-caption">Transkript ve analiz önceden hazırlanmış demo veridir.</p>
+      <dl className="incident-ticket"><div><dt>Olay</dt><dd>Trafik tıkanıklığı</dd></div><div><dt>Öngörülen sapma</dt><dd className="mono">+40 dk</dd></div><div><dt>Öncelik</dt><dd>Yüksek</dd></div><div><dt>Son durum</dt><dd>{operation.resolved ? 'Bitti' : 'Devam ediyor'}</dd></div></dl>
+      <p className="operation-caption">Mesaj özeti önceden hazırlanmış demo metnidir.</p>
     </section>}
     {vehicle.status === 'ramp' && <section className="detail-section"><h3>DEPO BEKLEME SÜRESİ</h3><div className={`waiting-counter ${overLimit ? 'over-limit' : ''}`}><span><Clock3 size={15} />Mal kabuldeyim · Peron No: 4</span><strong className="mono" data-testid="waiting-time">{now ? duration(elapsed) : '—:—:—'}</strong><small>Ücretsiz limit: <span className="mono">02:00:00</span></small><p>{overLimit ? `Ücretsiz süre aşıldı · ${duration(elapsed - FREE_WAIT_SECONDS)}` : 'Mal kabul işlemi bekleniyor.'}</p></div>
       <p className="operation-caption">İrtibat: Depo yetkilisi · Durum: Depo giriş sırası</p>

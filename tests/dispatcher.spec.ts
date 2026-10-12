@@ -29,7 +29,7 @@ test('filtre, plaka arama ve araç profili senkron çalışır', async ({ page }
   await expect(page.locator('.vehicle-card')).toHaveCount(1);
   await page.getByRole('button', { name: 'Tümü 5', exact: true }).click();
   await expect(page.locator('time')).toHaveText(/\d{2}:\d{2}:\d{2}/);
-  await expect(page.getByRole('button', { name: 'Yeni görev ata Faz 4' })).toBeDisabled();
+  await expect(page.getByRole('button', { name: 'Yeni görev ata', exact: true })).toBeEnabled();
   expect(await page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight)).toBeTruthy();
   await page.screenshot({ path: '.local/phase-1-desktop.png', fullPage: true });
   expect(errors).toEqual([]);

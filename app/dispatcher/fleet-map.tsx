@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { Crosshair, Expand, Route, Truck } from 'lucide-react';
 import { divIcon, latLngBounds } from 'leaflet';
@@ -10,7 +10,7 @@ import 'leaflet/dist/leaflet.css';
 import './map.css';
 
 type Point = [number, number];
-type Props = { vehicles: Vehicle[]; selected: Vehicle; focusRequest: number; onSelect: (id: string) => void };
+type Props = { vehicles: Vehicle[]; selected: Vehicle; focusRequest: number; routeFitRequest: number; routeFitVehicleId: string; onSelect: (id: string) => void };
 
 type RoadRoute = { points: Point[]; distance: number; duration: number; snappedDistance: number };
 const labels: Record<Status, string> = { emergency: 'Acil', ramp: 'Mal kabul', active: 'Yolda', idle: 'Boşta' };
@@ -19,13 +19,19 @@ const markerIcons = Object.fromEntries((Object.keys(labels) as Status[]).map(sta
   divIcon({ className: `fleet-marker ${status}`, html: `<span class="marker-halo"></span><span class="marker-truck">${truckSvg}</span>`, iconSize: [34, 34], iconAnchor: [17, 17], tooltipAnchor: [0, -22] }),
 ])) as Record<Status, ReturnType<typeof divIcon>>;
 
-function MapControls({ vehicles, selected, focusRequest, route }: Props & { route: Point[] }) {
+function MapControls({ vehicles, selected, focusRequest, route, routeFitRequest, routeFitVehicleId }: Props & { route: Point[] }) {
   const map = useMap();
+  const fitted = useRef(0);
   const animate = () => !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const [latitude, longitude] = selected.coordinates;
   useEffect(() => {
     if (focusRequest > 0) map.flyTo([latitude, longitude], 15, { animate: !window.matchMedia('(prefers-reduced-motion: reduce)').matches, duration: .8 });
   }, [map, latitude, longitude, focusRequest]);
+  useEffect(() => {
+    if (!routeFitRequest || routeFitRequest === fitted.current || selected.id !== routeFitVehicleId || route.length < 2) return;
+    fitted.current = routeFitRequest;
+    map.flyToBounds(latLngBounds(route), { padding: [50, 75], maxZoom: 15, animate: animate(), duration: .8 });
+  }, [map, route, routeFitRequest, routeFitVehicleId, selected.id]);
   useEffect(() => {
     const observer = new ResizeObserver(() => map.invalidateSize({ pan: false }));
     observer.observe(map.getContainer());
@@ -44,21 +50,24 @@ export default function FleetMap(props: Props) {
   const [tileAttempt, setTileAttempt] = useState(0);
   const [road, setRoad] = useState<{ id: string; data?: RoadRoute; error?: string } | null>(null);
   const [routeAttempt, setRouteAttempt] = useState(0);
+  const routeKey = selected.status === 'idle' ? '' : selected.destinationCoordinates ? `c:${selected.coordinates.join(',')};${selected.destinationCoordinates.join(',')}` : `v:${selected.id}`;
   useEffect(() => {
-    if (selected.status === 'idle') return;
+    if (!routeKey) return;
     const controller = new AbortController();
     setRoad(null);
-    fetch(`/api/route?vehicle=${encodeURIComponent(selected.id)}`, { signal: controller.signal })
+    const coordinates = routeKey.startsWith('c:') ? routeKey.slice(2).split(';') : null;
+    const query = coordinates ? `from=${encodeURIComponent(coordinates[0])}&to=${encodeURIComponent(coordinates[1])}` : `vehicle=${encodeURIComponent(routeKey.slice(2))}`;
+    fetch(`/api/route?${query}`, { signal: controller.signal })
       .then(async response => {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || 'Rota hesaplanamadı.');
-        if (!controller.signal.aborted) setRoad({ id: selected.id, data });
+        if (!controller.signal.aborted) setRoad({ id: routeKey, data });
       })
-      .catch(error => { if (!controller.signal.aborted) setRoad({ id: selected.id, error: error instanceof Error ? error.message : 'Rota hesaplanamadı.' }); });
+      .catch(error => { if (!controller.signal.aborted) setRoad({ id: routeKey, error: error instanceof Error ? error.message : 'Rota hesaplanamadı.' }); });
     return () => controller.abort();
-  }, [selected.id, selected.status, routeAttempt]);
+  }, [routeKey, routeAttempt]);
   const bounds = useMemo(() => latLngBounds(vehicles.map(vehicle => vehicle.coordinates)), [vehicles]);
-  const currentRoad = road?.id === selected.id && selected.status !== 'idle' ? road : null;
+  const currentRoad = road?.id === routeKey && selected.status !== 'idle' ? road : null;
   const route = currentRoad?.data?.points ?? [];
   const mapSelected = route.length ? { ...selected, coordinates: route[0] } : selected;
   return <div className="fleet-map-wrapper">
