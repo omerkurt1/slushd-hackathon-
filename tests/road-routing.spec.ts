@@ -6,7 +6,6 @@ test('rota servisi hatasında düz çizgi çizilmez ve tekrar deneme çalışır
   await page.route('**/api/route?*', route => route.fulfill({ status: 503, json: { error: 'Yol rotası bulunamadı.' } }));
   await page.goto('/dispatcher');
   await expect(page.locator('.vehicle-route')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Rotayı göster', exact: true })).toBeDisabled();
   await mockRoadRoutes(page);
   await page.reload();
   await expect(page.locator('.vehicle-route')).toHaveCount(1);

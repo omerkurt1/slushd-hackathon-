@@ -126,7 +126,6 @@ test('rota servisi hata verirse görev düz çizgiye düşmez', async ({ page })
   await fillTask(page);
   await page.getByRole('button', { name: 'Görevi ata ve sürücüye ilet' }).click();
   await expect(page.locator('.vehicle-route')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Rotayı göster', exact: true })).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Yolda 3', exact: true })).toBeVisible();
 });
 

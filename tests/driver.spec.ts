@@ -51,15 +51,15 @@ test('sürücü ekranı trafik, kaza, ses, mal kabul ve teslimi ayırır', async
   await expect(dispatcher.locator('.vehicle-card', { hasText: '34 LOG 101' })).toContainText('16:30');
 
   await page.getByRole('button', { name: 'Arıza', exact: true }).click();
-  await expect(dispatcher.getByTestId('driver-alarm')).toContainText('Acil teknik destek');
+  await expect(dispatcher.locator('.vehicle-card', { hasText: '34 LOG 101' })).toContainText('Acil teknik destek');
   await page.getByRole('button', { name: 'Depoda bekleme', exact: true }).click();
-  await expect(dispatcher.getByTestId('driver-alarm')).toContainText('Depo giriş sırası');
+  await expect(dispatcher.locator('.vehicle-card', { hasText: '34 LOG 101' })).toContainText('Depo giriş sırası');
   await page.getByRole('button', { name: 'Diğer', exact: true }).click();
   await page.getByRole('button', { name: 'Kantar / gümrük', exact: true }).click();
-  await expect(dispatcher.getByTestId('driver-alarm')).toContainText('Kantar / gümrük bekleniyor');
+  await expect(dispatcher.locator('.vehicle-card', { hasText: '34 LOG 101' })).toContainText('Kantar / gümrük bekleniyor');
   await page.getByRole('button', { name: 'Acil durum / Kaza' }).click();
   await expect(page.getByTestId('last-notice')).toContainText('Demo örneği: +30 dk');
-  await expect(dispatcher.getByTestId('driver-alarm')).toContainText('+30 dk gecikme');
+  await expect(dispatcher.locator('.vehicle-card', { hasText: '34 LOG 101' })).toContainText('+30 dk gecikme');
   await expect(dispatcher.locator('.vehicle-card', { hasText: '34 LOG 101' })).toContainText('17:00');
 
   await mic.dispatchEvent('pointerdown');
@@ -67,7 +67,8 @@ test('sürücü ekranı trafik, kaza, ses, mal kabul ve teslimi ayırır', async
   await page.waitForTimeout(500);
   await mic.dispatchEvent('pointerup');
   await expect(page.getByTestId('last-notice')).toContainText('Trafik kazası (+40 dk gecikme)');
-  await expect(dispatcher.getByTestId('driver-alarm')).toContainText('Kocaeli çıkışında kaza var');
+  await expect(dispatcher.getByRole('tab', { name: 'Mesaj' })).toHaveAttribute('aria-selected', 'true');
+  await expect(dispatcher.getByText('Kocaeli çıkışında kaza var.')).toBeVisible();
   await expect(dispatcher.locator('.vehicle-card', { hasText: '34 LOG 101' })).toContainText('17:10');
 
   await step.click();

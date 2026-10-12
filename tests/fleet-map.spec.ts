@@ -28,7 +28,6 @@ test('harita pinleri, rota ve araç seçimi senkron çalışır', async ({ page 
   await expect(page.getByTestId('selected-plate')).toHaveText('34 LOG 505');
   await expect(page.locator('.vehicle-card.selected')).toContainText('34 LOG 505');
   await expect(page.locator('.vehicle-route')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Rotayı göster' })).toBeDisabled();
   await expectCentered(page, '34 LOG 505 · Boşta');
   await page.getByRole('textbox', { name: 'Plaka ara' }).fill('34log308');
   await page.getByRole('textbox', { name: 'Plaka ara' }).press('Enter');
@@ -40,9 +39,7 @@ test('harita pinleri, rota ve araç seçimi senkron çalışır', async ({ page 
   await expect(page.locator('.vehicle-card')).toHaveCount(5);
   await expect(page.getByTestId('selected-plate')).toHaveText('41 LOG 204');
   await expectCentered(page, '41 LOG 204 · Mal kabul');
-  await page.getByRole('button', { name: 'Rotayı göster' }).click();
   await expect(page.locator('.vehicle-route')).toHaveCount(1);
-  await page.getByRole('button', { name: 'Araca odaklan' }).click();
   await expectCentered(page, '41 LOG 204 · Mal kabul');
   await page.getByRole('button', { name: 'Tüm filo', exact: true }).click();
   await page.getByTitle('34 LOG 101 · Acil', { exact: true }).focus();

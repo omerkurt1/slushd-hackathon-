@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { Crosshair, Expand, Route, Truck } from 'lucide-react';
+import { Expand, Truck } from 'lucide-react';
 import { divIcon, latLngBounds } from 'leaflet';
 import { CircleMarker, MapContainer, Marker, Polyline, TileLayer, Tooltip, useMap } from 'react-leaflet';
 import type { Vehicle, Status } from './dispatcher';
@@ -39,8 +39,6 @@ function MapControls({ vehicles, selected, focusRequest, route, routeFitRequest,
   }, [map]);
   return <div className="map-controls" onPointerDown={event => event.stopPropagation()} onDoubleClick={event => event.stopPropagation()}>
     <button type="button" onClick={() => map.flyToBounds(latLngBounds(vehicles.map(v => v.coordinates)), { paddingTopLeft: [70, 64], paddingBottomRight: [70, 120], maxZoom: 12, animate: animate(), duration: .8 })}><Expand size={14} />Tüm filo</button>
-    <button type="button" onClick={() => map.flyTo(selected.coordinates, 15, { animate: animate(), duration: .8 })}><Crosshair size={14} />Araca odaklan</button>
-    <button type="button" disabled={route.length < 2} onClick={() => map.flyToBounds(latLngBounds(route), { paddingTopLeft: [70, 64], paddingBottomRight: [70, 120], maxZoom: 15, animate: animate(), duration: .8 })}><Route size={14} />Rotayı göster</button>
   </div>;
 }
 

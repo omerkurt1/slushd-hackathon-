@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { ArrowDown, ArrowUpRight, MapPin, Plus, Search, ShieldAlert, Truck, UserRound, X } from 'lucide-react';
+import { ArrowUpRight, MapPin, Plus, Search, ShieldAlert, Truck, UserRound, X } from 'lucide-react';
 import Operations, { delayedEta, type Operation } from './operations';
 import TaskDrawer from './task-drawer';
 import { applyAssignment, parseAssignment, type Assignment, type AssignmentInput } from './assignment';
@@ -46,7 +46,6 @@ export default function Dispatcher() {
   const [now, setNow] = useState(0);
   const [ready, setReady] = useState(false);
   const [persistError, setPersistError] = useState(false);
-  const [driverAlarm, setDriverAlarm] = useState<{ plate: string; summary: string; detail: string; transcript: string } | null>(null);
   const operationsRef = useRef<Record<string, FleetOperation>>({});
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [presetVehicleId, setPresetVehicleId] = useState('');
@@ -88,7 +87,6 @@ export default function Dispatcher() {
     const driven = Object.entries(defaults).find(([, operation]) => operation.driverState);
     if (driven?.[1].driverState) {
       const state = driven[1].driverState;
-      if (state.status === 'emergency') setDriverAlarm({ plate: initialVehicles.find(v => v.id === driven[0])?.plate ?? driven[0], summary: state.summary, detail: state.detail, transcript: state.reportActive ? state.reportTranscript : '' });
       setDetailTab(state.status === 'ramp' ? 'incident' : state.reportActive ? 'message' : state.status === 'emergency' ? 'incident' : 'driver');
     }
     setNow(started); setReady(true);
@@ -131,7 +129,6 @@ export default function Dispatcher() {
     const clearedAt = Date.now();
     setOperations(current => ({ ...current, [selected.id]: { ...current[selected.id], resolved: true, driverClearedAt: clearedAt, driverState: undefined } }));
     setVehicles(current => current.map(v => v.id === selected.id ? { ...v, status: 'active', detail: 'Olay çözüldü' } : v));
-    setDriverAlarm(current => current?.plate === selected.plate ? null : current);
   }
   function applyLive(signal: DriverSignal) {
     const current = operationsRef.current;
@@ -149,9 +146,7 @@ export default function Dispatcher() {
     setFleetOpen(true);
     setFilter('all');
     setQuery('');
-    const plate = initialVehicles.find(vehicle => vehicle.id === signal.vehicleId)?.plate ?? signal.vehicleId;
-    setDriverAlarm(driverState.status === 'emergency' ? { plate, summary: driverState.summary, detail: driverState.detail, transcript: driverState.reportActive ? driverState.reportTranscript : '' } : null);
-    if (signal.type === 'voice') new Audio('/audio/driver-report-demo.wav').play().catch(() => undefined);
+    if (signal.type === 'voice') new Audio('/audio/02_lastik_arizasi.wav').play().catch(() => undefined);
   }
   const applyLiveRef = useRef(applyLive);
   applyLiveRef.current = applyLive;
@@ -214,8 +209,6 @@ export default function Dispatcher() {
         <button className="primary-button" disabled={!ready} onClick={event => openTaskDrawer('', event.currentTarget)}><Plus size={16} />Yeni görev ata</button>
       </section>
 
-      {driverAlarm && <div className="driver-alarm" role="status" data-testid="driver-alarm"><ShieldAlert size={18} /><strong className="mono">{driverAlarm.plate}</strong><span>{driverAlarm.summary}</span>{driverAlarm.detail !== driverAlarm.summary && <span>{driverAlarm.detail}</span>}{driverAlarm.transcript && <span>“{driverAlarm.transcript}”</span>}<small>Sürücü konsolu · demo bildirim</small></div>}
-
       <div className="workspace-grid">
         <section className="map-panel" aria-label="Harita alanı">
           <div className="map-stage">
@@ -227,7 +220,7 @@ export default function Dispatcher() {
         <div className={`dock dock-fleet ${fleetShown ? 'is-open' : ''}`}>
           {fleetShown ? <aside id="fleet-dock" className="fleet-panel" aria-label="Filo araç listesi">
             <form className="search fleet-search" onSubmit={event => { event.preventDefault(); if (matches[0]) { selectVehicle(matches[0].id); setFilter('all'); } }}><Search size={16} /><input aria-label="Plaka ara" placeholder="Plaka ara · 34 LOG 101" value={query} onChange={event => setQuery(event.target.value)} />{query && <button type="button" aria-label="Aramayı temizle" onClick={() => setQuery('')}><X size={14} /></button>}</form>
-            <div className="panel-heading"><h2>Filo görünümü <span className="count">{vehicles.length}</span></h2><span className="muted text-xs">Önceliğe göre <ArrowDown size={12} /></span>{showMap && <button type="button" className="dock-toggle" aria-expanded="true" aria-controls="fleet-dock" onClick={() => setFleetOpen(false)}><X size={14} />Kapat</button>}</div>
+            <div className="panel-heading"><h2>Filo görünümü <span className="count">{vehicles.length}</span></h2>{showMap && <button type="button" className="dock-toggle" aria-expanded="true" aria-controls="fleet-dock" onClick={() => setFleetOpen(false)}><X size={14} />Kapat</button>}</div>
             <div className="filter-tabs" role="group" aria-label="Araç durum filtresi">{(['all', 'emergency', 'ramp', 'active', 'idle'] as const).map(status => <button key={status} className={filter === status ? 'filter active-filter' : 'filter'} aria-pressed={filter === status} onClick={() => setFilter(status)}>{status === 'all' ? 'Tümü' : statuses[status].short}<span>{status === 'all' ? vehicles.length : counts[status]}</span></button>)}</div>
             <div className="fleet-list">{visible.map(vehicle => <button key={vehicle.id} className={`vehicle-card ${selectedVehicleId === vehicle.id ? 'selected' : ''}`} aria-pressed={selectedVehicleId === vehicle.id} onClick={() => selectVehicle(vehicle.id)}><span className={`vehicle-icon ${vehicle.status}`}><Truck size={16} /></span><span className="card-identity"><strong className="mono">{vehicle.plate}</strong><span className="driver">{vehicle.driver}</span></span><span className="card-location"><MapPin size={13} /><span>{vehicle.location}</span></span><span className={`badge ${vehicle.status}`}><i className={`dot ${vehicle.status}`} />{vehicle.detail}</span><span className="eta mono">{vehicle.status === 'idle' ? '—' : vehicle.eta}</span></button>)}{visible.length === 0 && <div className="empty-state"><Search size={24} /><strong>Araç bulunamadı</strong><p>Plakayı veya durum filtresini değiştirin.</p><button onClick={() => { setFilter('all'); setQuery(''); }}>Filtreleri temizle</button></div>}</div>
             <div className="panel-footer"><span className="mono">{visible.length} / {vehicles.length}</span> araç gösteriliyor<span>Örnek filo</span></div>

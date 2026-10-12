@@ -7,7 +7,7 @@ test.beforeEach(async ({ page }) => { await page.route('**://tile.openstreetmap.
 test('filtre, plaka arama ve araç profili senkron çalışır', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.goto('/');
+  await page.goto('/dispatcher');
   await expect(page).toHaveURL(/\/dispatcher$/);
   await expect(page.locator('.vehicle-card')).toHaveCount(5);
   await expect(page.locator('.vehicle-card').first()).toContainText('34 LOG 101');

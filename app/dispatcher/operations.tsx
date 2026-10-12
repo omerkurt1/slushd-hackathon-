@@ -46,7 +46,7 @@ export default function Operations({ vehicle, operation, now, report, part, onAp
 
   if (part === 'message') return <>
     {hasReport && <section className="detail-section"><h3>SÜRÜCÜ SES KAYDI</h3>
-      <audio ref={audio} src="/audio/driver-report-demo.wav" preload="metadata" onLoadedMetadata={event => setLength(event.currentTarget.duration)} onTimeUpdate={event => setSeconds(event.currentTarget.currentTime)} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)} onError={() => setMessage('Örnek ses kaydı yüklenemedi. Transkripti kullanabilirsiniz.')} />
+      <audio ref={audio} src="/audio/02_lastik_arizasi.wav" preload="metadata" onLoadedMetadata={event => setLength(event.currentTarget.duration)} onTimeUpdate={event => setSeconds(event.currentTarget.currentTime)} onPlay={() => setPlaying(true)} onPause={() => setPlaying(false)} onEnded={() => setPlaying(false)} onError={() => setMessage('Örnek ses kaydı yüklenemedi. Transkripti kullanabilirsiniz.')} />
       <div className="audio-controls"><button onClick={toggleAudio} aria-label={playing ? 'Ses kaydını duraklat' : 'Ses kaydını oynat'}>{playing ? <Pause size={15} /> : <Play size={15} />}{playing ? 'Duraklat' : 'Oynat'}</button><span className="mono">{duration(seconds).slice(3)} / {duration(length).slice(3)}</span><button aria-label="Oynatma hızı" onClick={() => { const next = speed === 1 ? 1.2 : 1; setSpeed(next); if (audio.current) audio.current.playbackRate = next; }}>{speed.toFixed(1)}x</button></div>
       <p className="operation-caption">Sentetik demo kayıt · Gerçek sürücü kaydı değildir.</p>
       <h3 className="report-subtitle">MESAJ ÖZETİ <span>ÖRNEK</span></h3>
