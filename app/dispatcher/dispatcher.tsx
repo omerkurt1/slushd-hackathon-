@@ -17,15 +17,15 @@ export type Vehicle = {
 };
 
 const initialVehicles: Vehicle[] = [
-  { id: 'v1', plate: '34 LOG 101', driver: 'Ahmet Yılmaz', phone: '+90 532 000 01 01', status: 'emergency', origin: 'Hadımköy Dağıtım Merkezi', destination: 'Gebze Lojistik Köyü', location: 'Kuzey Marmara Otoyolu · Çekmeköy', speed: 0, coordinates: [41.1004, 29.2731], eta: '16:30', detail: '+40 dk gecikme', cargo: '12 palet otomotiv parçası' },
-  { id: 'v2', plate: '41 LOG 204', driver: 'Mehmet Demir', phone: '+90 532 000 02 04', status: 'ramp', origin: 'Tuzla Transfer Merkezi', destination: 'Borusan Gebze Depo · Peron No: 4', location: 'Gebze · Kocaeli', speed: 0, coordinates: [40.8235, 29.4384], eta: '14:45', detail: 'Mal kabulde bekliyor', cargo: '8 palet endüstriyel ekipman' },
-  { id: 'v3', plate: '34 LOG 308', driver: 'Elif Kaya', phone: '+90 532 000 03 08', status: 'active', origin: 'İkitelli Depo', destination: 'Dudullu Dağıtım Merkezi', location: 'TEM Otoyolu · Ümraniye', speed: 68, coordinates: [41.0372, 29.1244], eta: '15:50', detail: 'Zamanında', cargo: '16 palet ambalaj malzemesi' },
-  { id: 'v4', plate: '16 LOG 412', driver: 'Mustafa Çelik', phone: '+90 532 000 04 12', status: 'active', origin: 'Bursa Organize Sanayi', destination: 'Dilovası Transfer Merkezi', location: 'Osmangazi Köprüsü · Dilovası', speed: 74, coordinates: [40.7519, 29.5169], eta: '16:10', detail: 'Zamanında', cargo: '10 palet tekstil ürünü' },
-  { id: 'v5', plate: '34 LOG 505', driver: 'Can Özkan', phone: '+90 532 000 05 05', status: 'idle', origin: 'Tuzla Filo Parkı', destination: 'Görev bekleniyor', location: 'Tuzla · İstanbul', speed: 0, coordinates: [40.8763, 29.3421], eta: '—', detail: 'Görev bekliyor', cargo: 'Araç boş' },
+  { id: 'v1', plate: '34 LOG 101', driver: 'Ahmet Yılmaz', phone: '+90 532 000 01 01', status: 'emergency', origin: 'Hadimkoy Distribution Center', destination: 'Gebze Logistics Park', location: 'North Marmara Motorway · Cekmekoy', speed: 0, coordinates: [41.1004, 29.2731], eta: '16:30', detail: '+40 min delay', cargo: '12 pallets of auto parts' },
+  { id: 'v2', plate: '41 LOG 204', driver: 'Mehmet Demir', phone: '+90 532 000 02 04', status: 'ramp', origin: 'Tuzla Transfer Center', destination: 'Borusan Gebze Warehouse · Dock door 4', location: 'Gebze · Kocaeli', speed: 0, coordinates: [40.8235, 29.4384], eta: '14:45', detail: 'Waiting at receiving', cargo: '8 pallets of industrial equipment' },
+  { id: 'v3', plate: '34 LOG 308', driver: 'Elif Kaya', phone: '+90 532 000 03 08', status: 'active', origin: 'Ikitelli Warehouse', destination: 'Dudullu Distribution Center', location: 'TEM Motorway · Umraniye', speed: 68, coordinates: [41.0372, 29.1244], eta: '15:50', detail: 'On time', cargo: '16 pallets of packaging material' },
+  { id: 'v4', plate: '16 LOG 412', driver: 'Mustafa Çelik', phone: '+90 532 000 04 12', status: 'active', origin: 'Bursa Organized Industrial Zone', destination: 'Dilovasi Transfer Center', location: 'Osmangazi Bridge · Dilovasi', speed: 74, coordinates: [40.7519, 29.5169], eta: '16:10', detail: 'On time', cargo: '10 pallets of textile goods' },
+  { id: 'v5', plate: '34 LOG 505', driver: 'Can Özkan', phone: '+90 532 000 05 05', status: 'idle', origin: 'Tuzla Fleet Yard', destination: 'Awaiting task', location: 'Tuzla · Istanbul', speed: 0, coordinates: [40.8763, 29.3421], eta: '—', detail: 'Awaiting task', cargo: 'Vehicle empty' },
 ];
 const statuses: Record<Status, { label: string; short: string }> = {
-  emergency: { label: 'Olay / Kriz', short: 'Acil' }, ramp: { label: 'Mal kabul', short: 'Mal kabul' },
-  active: { label: 'Yolda', short: 'Yolda' }, idle: { label: 'Boşta', short: 'Boşta' },
+  emergency: { label: 'Incident', short: 'Incident' }, ramp: { label: 'Receiving', short: 'Receiving' },
+  active: { label: 'En route', short: 'En route' }, idle: { label: 'Idle', short: 'Idle' },
 };
 const priority: Record<Status, number> = { emergency: 0, ramp: 1, active: 2, idle: 3 };
 type FleetOperation = Operation & { assignment?: Assignment; driverState?: DriverState; driverClearedAt?: number };
@@ -38,7 +38,7 @@ function projectDriver(vehicle: Vehicle, operation: FleetOperation): Vehicle {
   return { ...vehicle, status: state.status, detail: state.detail, eta, speed: state.halted ? 0 : vehicle.speed, location: state.location ?? vehicle.location };
 }
 const normalize = (value: string) => value.toLocaleLowerCase('tr-TR').replace(/\s+/g, '');
-const FleetMap = dynamic(() => import('./fleet-map'), { ssr: false, loading: () => <div className="map-loading" role="status">Harita yükleniyor…</div> });
+const FleetMap = dynamic(() => import('./fleet-map'), { ssr: false, loading: () => <div className="map-loading" role="status">Loading map…</div> });
 
 export default function Dispatcher() {
   const [vehicles, setVehicles] = useState(initialVehicles);
@@ -80,7 +80,7 @@ export default function Dispatcher() {
     setOperations(defaults);
     setVehicles(initialVehicles.map(v => {
       const saved = defaults[v.id];
-      const next = { ...v, eta: saved.delayApproved ? delayedEta(v.eta, 40) : v.eta, status: saved.resolved && v.status === 'emergency' ? 'active' as const : v.status, detail: saved.resolved ? 'Olay çözüldü' : v.detail };
+      const next = { ...v, eta: saved.delayApproved ? delayedEta(v.eta, 40) : v.eta, status: saved.resolved && v.status === 'emergency' ? 'active' as const : v.status, detail: saved.resolved ? 'Incident closed' : v.detail };
       const assigned = saved.assignment && v.status === 'idle' ? applyAssignment(next, saved.assignment) : next;
       return saved.driverState ? projectDriver(assigned, saved) : assigned;
     }));
@@ -98,7 +98,7 @@ export default function Dispatcher() {
     try {
       localStorage.setItem('slushd-operations-v1', JSON.stringify(operations));
       localStorage.setItem(FLEET_SNAPSHOT_KEY, JSON.stringify(vehicles.map(v => ({ id: v.id, plate: v.plate, driver: v.driver, destination: v.destination, eta: v.eta, status: v.status, detail: v.detail }))));
-      localStorage.setItem('slushd-tracking-v1', JSON.stringify(vehicles.filter(v => v.status !== 'idle').map(v => ({ id: v.taskId ?? v.id, plate: v.plate, eta: v.eta, location: v.location, destination: v.destination, status: operations[v.id]?.driverState?.delivered ? 'Teslim edildi' : statuses[v.status].label, detail: v.detail }))));
+      localStorage.setItem('slushd-tracking-v1', JSON.stringify(vehicles.filter(v => v.status !== 'idle').map(v => ({ id: v.taskId ?? v.id, plate: v.plate, eta: v.eta, location: v.location, destination: v.destination, status: operations[v.id]?.driverState?.delivered ? 'Delivered' : statuses[v.status].label, detail: v.detail }))));
       setPersistError(false);
     } catch { setPersistError(true); }
   }, [ready, operations, vehicles]);
@@ -122,13 +122,13 @@ export default function Dispatcher() {
   function approveDelay() {
     if (!selectedOperation || selectedOperation.delayApproved || selectedOperation.resolved) return;
     setOperations(current => ({ ...current, [selected.id]: { ...current[selected.id], delayApproved: true } }));
-    setVehicles(current => current.map(v => v.id === selected.id ? { ...v, eta: delayedEta(initialVehicles.find(item => item.id === v.id)!.eta, 40), detail: 'Gecikme onaylandı' } : v));
+    setVehicles(current => current.map(v => v.id === selected.id ? { ...v, eta: delayedEta(initialVehicles.find(item => item.id === v.id)!.eta, 40), detail: 'Delay approved' } : v));
   }
   function resolveIncident() {
     if (!selectedOperation || selectedOperation.resolved) return;
     const clearedAt = Date.now();
     setOperations(current => ({ ...current, [selected.id]: { ...current[selected.id], resolved: true, driverClearedAt: clearedAt, driverState: undefined } }));
-    setVehicles(current => current.map(v => v.id === selected.id ? { ...v, status: 'active', detail: 'Olay çözüldü' } : v));
+    setVehicles(current => current.map(v => v.id === selected.id ? { ...v, status: 'active', detail: 'Incident closed' } : v));
   }
   function applyLive(signal: DriverSignal) {
     const current = operationsRef.current;
@@ -199,55 +199,55 @@ export default function Dispatcher() {
   return (
     <main className="console-shell">
       <header className="topbar">
-        <a className="brand" href="/dispatcher" aria-label="Slushd operasyon merkezi"><span className="brand-icon"><Truck size={21} /></span><span>SLUSHD<span className="brand-divider">/</span><span className="brand-sub">Operasyon</span></span></a>
-        <div className="top-summary" aria-label="Filo özeti"><span>Toplam <b className="mono">{vehicles.length}</b></span>{(['active', 'ramp', 'emergency', 'idle'] as Status[]).map(status => <span key={status}><i className={`dot ${status}`} />{statuses[status].label} <b className="mono">{counts[status]}</b></span>)}</div>
-        <div className="operator"><span className="avatar">OK</span><span>Operasyon ekibi<small>Marmara bölgesi</small></span></div>
+        <a className="brand" href="/dispatcher" aria-label="Slushd operations center"><span className="brand-icon"><Truck size={21} /></span><span>SLUSHD<span className="brand-divider">/</span><span className="brand-sub">Operations</span></span></a>
+        <div className="top-summary" aria-label="Fleet summary"><span>Total <b className="mono">{vehicles.length}</b></span>{(['active', 'ramp', 'emergency', 'idle'] as Status[]).map(status => <span key={status}><i className={`dot ${status}`} />{statuses[status].label} <b className="mono">{counts[status]}</b></span>)}</div>
+        <div className="operator"><span className="avatar">OK</span><span>Operations team<small>Marmara region</small></span></div>
       </header>
 
       <section className="workspace-bar">
-        <h1>Operasyon merkezi</h1>
-        <button className="primary-button" disabled={!ready} onClick={event => openTaskDrawer('', event.currentTarget)}><Plus size={16} />Yeni görev ata</button>
+        <h1>Operations center</h1>
+        <button className="primary-button" disabled={!ready} onClick={event => openTaskDrawer('', event.currentTarget)}><Plus size={16} />Assign a task</button>
       </section>
 
       <div className="workspace-grid">
-        <section className="map-panel" aria-label="Harita alanı">
+        <section className="map-panel" aria-label="Map">
           <div className="map-stage">
             {showMap && <FleetMap vehicles={vehicles} selected={selected} focusRequest={focusRequest} routeFitRequest={routeFit.token} routeFitVehicleId={routeFit.vehicleId} onSelect={id => { selectVehicle(id); setFilter('all'); setQuery(''); }} />}
-            <div className="map-note"><ShieldAlert size={16} /><div><strong>Operasyon önceliği</strong><span>{counts.emergency ? `${counts.emergency} araç için olay bildirimi bulunuyor.` : 'Açık olay bildirimi bulunmuyor.'}</span></div>{firstIncident && <button onClick={() => { setFilter('emergency'); setQuery(''); selectVehicle(firstIncident.id); }}>İncele <ArrowUpRight size={14} /></button>}</div>
+            <div className="map-note"><ShieldAlert size={16} /><div><strong>Operations priority</strong><span>{counts.emergency ? `${counts.emergency} vehicle${counts.emergency === 1 ? ' has' : 's have'} an incident report.` : 'No open incident reports.'}</span></div>{firstIncident && <button onClick={() => { setFilter('emergency'); setQuery(''); selectVehicle(firstIncident.id); }}>Review <ArrowUpRight size={14} /></button>}</div>
           </div>
         </section>
 
         <div className={`dock dock-fleet ${fleetShown ? 'is-open' : ''}`}>
-          {fleetShown ? <aside id="fleet-dock" className="fleet-panel" aria-label="Filo araç listesi">
-            <form className="search fleet-search" onSubmit={event => { event.preventDefault(); if (matches[0]) { selectVehicle(matches[0].id); setFilter('all'); } }}><Search size={16} /><input aria-label="Plaka ara" placeholder="Plaka ara · 34 LOG 101" value={query} onChange={event => setQuery(event.target.value)} />{query && <button type="button" aria-label="Aramayı temizle" onClick={() => setQuery('')}><X size={14} /></button>}</form>
-            <div className="panel-heading"><h2>Filo görünümü <span className="count">{vehicles.length}</span></h2>{showMap && <button type="button" className="dock-toggle" aria-expanded="true" aria-controls="fleet-dock" onClick={() => setFleetOpen(false)}><X size={14} />Kapat</button>}</div>
-            <div className="filter-tabs" role="group" aria-label="Araç durum filtresi">{(['all', 'emergency', 'ramp', 'active', 'idle'] as const).map(status => <button key={status} className={filter === status ? 'filter active-filter' : 'filter'} aria-pressed={filter === status} onClick={() => setFilter(status)}>{status === 'all' ? 'Tümü' : statuses[status].short}<span>{status === 'all' ? vehicles.length : counts[status]}</span></button>)}</div>
-            <div className="fleet-list">{visible.map(vehicle => <button key={vehicle.id} className={`vehicle-card ${selectedVehicleId === vehicle.id ? 'selected' : ''}`} aria-pressed={selectedVehicleId === vehicle.id} onClick={() => selectVehicle(vehicle.id)}><span className={`vehicle-icon ${vehicle.status}`}><Truck size={16} /></span><span className="card-identity"><strong className="mono">{vehicle.plate}</strong><span className="driver">{vehicle.driver}</span></span><span className="card-location"><MapPin size={13} /><span>{vehicle.location}</span></span><span className={`badge ${vehicle.status}`}><i className={`dot ${vehicle.status}`} />{vehicle.detail}</span><span className="eta mono">{vehicle.status === 'idle' ? '—' : vehicle.eta}</span></button>)}{visible.length === 0 && <div className="empty-state"><Search size={24} /><strong>Araç bulunamadı</strong><p>Plakayı veya durum filtresini değiştirin.</p><button onClick={() => { setFilter('all'); setQuery(''); }}>Filtreleri temizle</button></div>}</div>
-            <div className="panel-footer"><span className="mono">{visible.length} / {vehicles.length}</span> araç gösteriliyor<span>Örnek filo</span></div>
-          </aside> : <button type="button" className="dock-toggle" aria-expanded="false" aria-controls="fleet-dock" onClick={() => setFleetOpen(true)}><Truck size={15} />Filo</button>}
+          {fleetShown ? <aside id="fleet-dock" className="fleet-panel" aria-label="Fleet vehicle list">
+            <form className="search fleet-search" onSubmit={event => { event.preventDefault(); if (matches[0]) { selectVehicle(matches[0].id); setFilter('all'); } }}><Search size={16} /><input aria-label="Search plate" placeholder="Search plate · 34 LOG 101" value={query} onChange={event => setQuery(event.target.value)} />{query && <button type="button" aria-label="Clear search" onClick={() => setQuery('')}><X size={14} /></button>}</form>
+            <div className="panel-heading"><h2>Fleet view <span className="count">{vehicles.length}</span></h2>{showMap && <button type="button" className="dock-toggle" aria-expanded="true" aria-controls="fleet-dock" onClick={() => setFleetOpen(false)}><X size={14} />Close</button>}</div>
+            <div className="filter-tabs" role="group" aria-label="Vehicle status filter">{(['all', 'emergency', 'ramp', 'active', 'idle'] as const).map(status => <button key={status} className={filter === status ? 'filter active-filter' : 'filter'} aria-pressed={filter === status} onClick={() => setFilter(status)}>{status === 'all' ? 'All' : statuses[status].short}<span>{status === 'all' ? vehicles.length : counts[status]}</span></button>)}</div>
+            <div className="fleet-list">{visible.map(vehicle => <button key={vehicle.id} className={`vehicle-card ${selectedVehicleId === vehicle.id ? 'selected' : ''}`} aria-pressed={selectedVehicleId === vehicle.id} onClick={() => selectVehicle(vehicle.id)}><span className={`vehicle-icon ${vehicle.status}`}><Truck size={16} /></span><span className="card-identity"><strong className="mono">{vehicle.plate}</strong><span className="driver">{vehicle.driver}</span></span><span className="card-location"><MapPin size={13} /><span>{vehicle.location}</span></span><span className={`badge ${vehicle.status}`}><i className={`dot ${vehicle.status}`} />{vehicle.detail}</span><span className="eta mono">{vehicle.status === 'idle' ? '—' : vehicle.eta}</span></button>)}{visible.length === 0 && <div className="empty-state"><Search size={24} /><strong>No vehicle found</strong><p>Change the plate or status filter.</p><button onClick={() => { setFilter('all'); setQuery(''); }}>Clear filters</button></div>}</div>
+            <div className="panel-footer"><span className="mono">{visible.length} / {vehicles.length}</span> vehicles shown<span>Sample fleet</span></div>
+          </aside> : <button type="button" className="dock-toggle" aria-expanded="false" aria-controls="fleet-dock" onClick={() => setFleetOpen(true)}><Truck size={15} />Fleet</button>}
         </div>
 
         <div className={`dock dock-detail ${detailShown ? 'is-open' : ''}`}>
-          {detailShown ? <aside id="detail-dock" className="detail-panel" aria-label="Araç detayı">
-          <div className="panel-heading"><h2>Araç detayı</h2>{showMap && <button type="button" className="dock-toggle" aria-expanded="true" aria-controls="detail-dock" onClick={() => setDetailOpen(false)}><X size={14} />Kapat</button>}</div>
-          <div className="filter-tabs detail-tabs" role="tablist" aria-label="Araç detay sekmeleri">{(['driver', 'message', 'incident', 'route'] as const).map(tab => <button key={tab} type="button" role="tab" aria-selected={detailTab === tab} className={detailTab === tab ? 'filter active-filter' : 'filter'} onClick={() => setDetailTab(tab)}>{tab === 'driver' ? 'Sürücü' : tab === 'message' ? 'Mesaj' : tab === 'incident' ? 'Olay' : 'Yol'}</button>)}</div>
+          {detailShown ? <aside id="detail-dock" className="detail-panel" aria-label="Vehicle detail">
+          <div className="panel-heading"><h2>Vehicle detail</h2>{showMap && <button type="button" className="dock-toggle" aria-expanded="true" aria-controls="detail-dock" onClick={() => setDetailOpen(false)}><X size={14} />Close</button>}</div>
+          <div className="filter-tabs detail-tabs" role="tablist" aria-label="Vehicle detail tabs">{(['driver', 'message', 'incident', 'route'] as const).map(tab => <button key={tab} type="button" role="tab" aria-selected={detailTab === tab} className={detailTab === tab ? 'filter active-filter' : 'filter'} onClick={() => setDetailTab(tab)}>{tab === 'driver' ? 'Driver' : tab === 'message' ? 'Message' : tab === 'incident' ? 'Incident' : 'Route'}</button>)}</div>
           <div className="detail-layout">
             {detailTab === 'driver' && <div className="detail-identity driver-tab" role="tabpanel">
               <h2 className="mono" data-testid="selected-plate">{selected.plate}</h2>
               <div className="driver-profile"><span className="avatar"><UserRound size={18} /></span><div><strong>{selected.driver}</strong><span className="mono">{selected.phone}</span></div></div>
             </div>}
-            {detailTab === 'message' && <div role="tabpanel">{ready && selected.status !== 'idle' ? <Operations part="message" vehicle={selected} operation={selectedOperation} now={now} report={selectedOperation?.driverState?.reportActive ? { title: selectedOperation.driverState.reportTitle, transcript: selectedOperation.driverState.reportTranscript, delay: selectedOperation.driverState.delayMinutes ? `+${selectedOperation.driverState.delayMinutes} dk` : '—' } : null} onApprove={approveDelay} onResolve={resolveIncident} onInvoice={note => setOperations(current => ({ ...current, [selected.id]: { ...current[selected.id], invoiceNote: current[selected.id].invoiceNote || note } }))} /> : <p className="operation-caption">Bu araçta mesaj kaydı yok.</p>}</div>}
-            {detailTab === 'incident' && <div role="tabpanel">{selected.status === 'idle' ? <section className="detail-section"><h3>OPERASYON DURUMU</h3><div className="status-note"><strong>Yeni göreve hazır</strong><p>Bu araç şu anda aktif bir göreve sahip değil.</p><button className="secondary-button" disabled={!ready} onClick={event => openTaskDrawer(selected.id, event.currentTarget)}><Plus size={15} />Bu araca görev ata</button></div></section> : ready && <Operations part="incident" vehicle={selected} operation={selectedOperation} now={now} report={selectedOperation?.driverState?.reportActive ? { title: selectedOperation.driverState.reportTitle, transcript: selectedOperation.driverState.reportTranscript, delay: selectedOperation.driverState.delayMinutes ? `+${selectedOperation.driverState.delayMinutes} dk` : '—' } : null} onApprove={approveDelay} onResolve={resolveIncident} onInvoice={note => setOperations(current => ({ ...current, [selected.id]: { ...current[selected.id], invoiceNote: current[selected.id].invoiceNote || note } }))} />}</div>}
+            {detailTab === 'message' && <div role="tabpanel">{ready && selected.status !== 'idle' ? <Operations part="message" vehicle={selected} operation={selectedOperation} now={now} report={selectedOperation?.driverState?.reportActive ? { title: selectedOperation.driverState.reportTitle, transcript: selectedOperation.driverState.reportTranscript, delay: selectedOperation.driverState.delayMinutes ? `+${selectedOperation.driverState.delayMinutes} min` : '—' } : null} onApprove={approveDelay} onResolve={resolveIncident} onInvoice={note => setOperations(current => ({ ...current, [selected.id]: { ...current[selected.id], invoiceNote: current[selected.id].invoiceNote || note } }))} /> : <p className="operation-caption">No message on file for this vehicle.</p>}</div>}
+            {detailTab === 'incident' && <div role="tabpanel">{selected.status === 'idle' ? <section className="detail-section"><h3>OPERATION STATUS</h3><div className="status-note"><strong>Ready for a new task</strong><p>This vehicle has no active task.</p><button className="secondary-button" disabled={!ready} onClick={event => openTaskDrawer(selected.id, event.currentTarget)}><Plus size={15} />Assign this vehicle</button></div></section> : ready && <Operations part="incident" vehicle={selected} operation={selectedOperation} now={now} report={selectedOperation?.driverState?.reportActive ? { title: selectedOperation.driverState.reportTitle, transcript: selectedOperation.driverState.reportTranscript, delay: selectedOperation.driverState.delayMinutes ? `+${selectedOperation.driverState.delayMinutes} min` : '—' } : null} onApprove={approveDelay} onResolve={resolveIncident} onInvoice={note => setOperations(current => ({ ...current, [selected.id]: { ...current[selected.id], invoiceNote: current[selected.id].invoiceNote || note } }))} />}</div>}
             {detailTab === 'route' && <div role="tabpanel">
-              <div className="telemetry"><div><span>Yük</span><strong className="cargo-summary">{selected.cargo}</strong></div><div><span>Hedef varış</span><strong className="mono">{selected.eta}</strong></div></div>
-              <section className="detail-section"><h3>GÜZERGAH BİLGİSİ</h3><div className="route"><div><span className="route-dot" /><small>ÇIKIŞ NOKTASI</small><strong>{selected.origin}</strong></div><div><span className="route-square" /><small>TESLİMAT NOKTASI</small><strong>{selected.destination}</strong></div></div><div className="location-box"><MapPin size={15} /><div><strong>{selected.location}</strong><span className="mono">{selected.coordinates.map(c => c.toFixed(4)).join(', ')}</span></div></div></section>
+              <div className="telemetry"><div><span>Cargo</span><strong className="cargo-summary">{selected.cargo}</strong></div><div><span>Target arrival</span><strong className="mono">{selected.eta}</strong></div></div>
+              <section className="detail-section"><h3>ROUTE</h3><div className="route"><div><span className="route-dot" /><small>ORIGIN</small><strong>{selected.origin}</strong></div><div><span className="route-square" /><small>DELIVERY POINT</small><strong>{selected.destination}</strong></div></div><div className="location-box"><MapPin size={15} /><div><strong>{selected.location}</strong><span className="mono">{selected.coordinates.map(c => c.toFixed(4)).join(', ')}</span></div></div></section>
             </div>}
           </div>
-        </aside> : <button type="button" className="dock-toggle" aria-expanded="false" aria-controls="detail-dock" onClick={() => setDetailOpen(true)}><UserRound size={15} />Detay</button>}
+        </aside> : <button type="button" className="dock-toggle" aria-expanded="false" aria-controls="detail-dock" onClick={() => setDetailOpen(true)}><UserRound size={15} />Detail</button>}
         </div>
       </div>
       <TaskDrawer open={drawerOpen} vehicles={vehicles} presetVehicleId={presetVehicleId} now={now} onClose={closeTaskDrawer} onAssign={assignTask} />
-      <footer className="statusbar"><span><i className="dot idle" />Simülasyon ortamı · Canlı GPS bağlantısı yok</span>{persistError && <span role="status">Kayıt bu tarayıcıda saklanamadı. Yenilemede görev kaybolur.</span>}<span>Faz 04<span className="footer-divider">|</span>SLUSHD Dispatcher <span className="mono">v0.4</span></span></footer>
+      <footer className="statusbar"><span><i className="dot idle" />Simulation · No live GPS connection</span>{persistError && <span role="status">Could not save in this browser. The task is lost on refresh.</span>}<span>Phase 04<span className="footer-divider">|</span>SLUSHD Dispatcher <span className="mono">v0.4</span></span></footer>
     </main>
   );
 }

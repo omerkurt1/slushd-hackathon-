@@ -2,9 +2,9 @@ import type { Metadata, Viewport } from 'next';
 import DriverConsole from './driver';
 
 export const metadata: Metadata = {
-  title: 'SLUSHD | Sürücü',
-  description: 'Direksiyon başı görev konsolu. Telefon konumu kullanılmaz.',
-  appleWebApp: { capable: true, title: 'SLUSHD Sürücü', statusBarStyle: 'default' },
+  title: 'SLUSHD | Driver',
+  description: 'In-cab task console. Phone location is not used.',
+  appleWebApp: { capable: true, title: 'SLUSHD Driver', statusBarStyle: 'default' },
 };
 
 export const viewport: Viewport = {

@@ -26,7 +26,7 @@ export type Draft = {
 };
 
 const taskIdPattern = /^tsk_[0-9a-f-]{36}$/i;
-const etaPattern = /^\d{2}:\d{2}( \(\+1 gün\))?$/;
+const etaPattern = /^\d{2}:\d{2}( \(\+1 day\))?$/;
 const phonePattern = /^\+90 5\d{2} \d{3} \d{2} \d{2}$/;
 
 export function normalizePhone(input: string) {
@@ -48,26 +48,26 @@ export function resolveEta(time: string, now: Date) {
   const currentMinute = Number(parts.find(part => part.type === 'minute')?.value);
   const nextDay = hour * 60 + minute <= currentHour * 60 + currentMinute;
   const clock = `${match[1]}:${match[2]}`;
-  return { eta: nextDay ? `${clock} (+1 gün)` : clock, nextDay };
+  return { eta: nextDay ? `${clock} (+1 day)` : clock, nextDay };
 }
 
 export function validateDraft(draft: Draft, idleIds: string[], now: Date): { ok: true; value: AssignmentInput } | { ok: false; errors: Record<string, string> } {
   const errors: Record<string, string> = {};
-  if (!idleIds.includes(draft.vehicleId)) errors.vehicleId = 'Boşta bir araç seçin. Aktif görevi olan araca yeni görev yazılmaz.';
+  if (!idleIds.includes(draft.vehicleId)) errors.vehicleId = 'Select an idle vehicle. A new task is not written over an active one.';
   const origin = findSite(draft.origin);
   const destination = findSite(draft.destination);
-  if (!origin) errors.origin = 'Çıkış noktası doğrulanamadı. Listeden bir demo noktası seçin.';
-  if (!destination) errors.destination = 'Teslimat noktası doğrulanamadı. Listeden bir demo noktası seçin.';
-  else if (origin && origin.id === destination.id) errors.destination = 'Hedef, çıkış noktasından farklı olmalı.';
+  if (!origin) errors.origin = 'Origin could not be verified. Choose a demo site from the list.';
+  if (!destination) errors.destination = 'Delivery point could not be verified. Choose a demo site from the list.';
+  else if (origin && origin.id === destination.id) errors.destination = 'The destination must differ from the origin.';
   const eta = resolveEta(draft.time, now);
-  if (!eta) errors.time = 'Hedef varış saati seçin.';
+  if (!eta) errors.time = 'Choose a target arrival time.';
   const recipientName = draft.recipientName.trim();
-  if (!recipientName) errors.recipientName = 'Alıcı şirket veya kişi adı gerekli.';
-  else if (recipientName.length > 120) errors.recipientName = 'Alıcı adı 120 karakteri aşamaz.';
+  if (!recipientName) errors.recipientName = 'Recipient company or person is required.';
+  else if (recipientName.length > 120) errors.recipientName = 'Recipient name cannot exceed 120 characters.';
   const recipientPhone = normalizePhone(draft.recipientPhone);
-  if (!recipientPhone) errors.recipientPhone = 'Telefon 5 ile başlayan 10 haneli bir cep numarası olmalı. Örnek: +90 532 000 00 00';
+  if (!recipientPhone) errors.recipientPhone = 'Enter a 10-digit mobile number starting with 5. Example: +90 532 000 00 00';
   const cargo = draft.cargo.trim();
-  if (cargo.length > 240) errors.cargo = 'Yük notu 240 karakteri aşamaz.';
+  if (cargo.length > 240) errors.cargo = 'Cargo note cannot exceed 240 characters.';
   if (Object.keys(errors).length || !origin || !destination || !eta || !recipientPhone) return { ok: false, errors };
   return {
     ok: true,
@@ -120,8 +120,8 @@ export function applyAssignment(vehicle: Vehicle, assignment: Assignment): Vehic
     location: assignment.origin,
     speed: 0,
     eta: assignment.eta,
-    detail: `Yolda (Hedef: ${assignment.eta})`,
-    cargo: assignment.cargo || 'Yük notu yok',
+    detail: `En route (ETA: ${assignment.eta})`,
+    cargo: assignment.cargo || 'No cargo note',
     taskId: assignment.taskId,
     recipientName: assignment.recipientName,
     recipientPhone: assignment.recipientPhone,

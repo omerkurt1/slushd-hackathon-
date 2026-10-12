@@ -108,8 +108,8 @@ export function evolve(previous: DriverState | undefined, signal: DriverSignal):
     case 'customs':
       return { ...next, status: 'emergency', halted: true, delivered: false };
     case 'at_ramp':
-      return { ...next, phase: 'AT_RAMP', status: 'ramp', detail: 'Mal kabulde bekliyor', waitingSince: previous?.waitingSince || signal.at, halted: true, delivered: false };
+      return { ...next, phase: 'AT_RAMP', status: 'ramp', detail: 'Waiting at receiving', waitingSince: previous?.waitingSince || signal.at, halted: true, delivered: false };
     case 'delivered':
-      return { ...next, phase: 'DELIVERED', status: 'active', detail: 'İrsaliye alındı', halted: true, delivered: true };
+      return { ...next, phase: 'DELIVERED', status: 'active', detail: 'Delivery note received', halted: true, delivered: true };
   }
 }

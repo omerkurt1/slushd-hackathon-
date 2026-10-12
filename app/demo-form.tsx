@@ -20,24 +20,24 @@ export function DemoForm() {
   }
 
   if (sent) {
-    return <p className="form-note" role="status">Talebiniz bu tarayıcıda kaydedildi. Araç sayınıza göre Starter, Pro veya Enterprise paketinden değerlendirme yapılır. Bu demo form bir başvuru kuyruğuna iletmez.</p>;
+    return <p className="form-note" role="status">Your request is saved in this browser. It is reviewed against Starter, Pro, or Enterprise based on fleet size. This demo form does not send the request to a queue.</p>;
   }
 
   return (
     <form className="form" onSubmit={onSubmit}>
-      <label htmlFor="demo-name">Ad soyad
+      <label htmlFor="demo-name">Full name
         <input id="demo-name" name="name" autoComplete="name" required />
       </label>
-      <label htmlFor="demo-email">Şirket e-postası
+      <label htmlFor="demo-email">Company email
         <input id="demo-email" name="email" type="email" autoComplete="email" required />
       </label>
-      <label htmlFor="demo-fleet">Filodaki araç sayısı
+      <label htmlFor="demo-fleet">Vehicles in the fleet
         <input id="demo-fleet" name="fleet" type="number" min={1} inputMode="numeric" required />
       </label>
-      <label htmlFor="demo-message">Mesaj
+      <label htmlFor="demo-message">Message
         <textarea id="demo-message" name="message" required />
       </label>
-      <button className="btn btn-primary" type="submit">Demo talep et</button>
+      <button className="btn btn-primary" type="submit">Request a demo</button>
     </form>
   );
 }

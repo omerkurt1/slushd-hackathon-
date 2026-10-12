@@ -27,12 +27,12 @@ async function calculate(key: string, start: Point, end: Point): Promise<Result>
   const response = await fetch(`${upstream}/${coordinates}?overview=full&geometries=geojson&steps=true&radiuses=2000;2000`, {
     signal: AbortSignal.timeout(12000), cache: 'no-store', headers: { 'User-Agent': 'Slushd-Dispatcher-Demo/0.4 (https://github.com/omerkurt1/slushd-hackathon-)' },
   });
-  if (!response.ok) throw new Error('Rota servisine ulaşılamadı.');
+  if (!response.ok) throw new Error('The routing service could not be reached.');
   const data = await response.json();
   const route = data.routes?.[0];
-  if (data.code !== 'Ok' || !route || route.geometry?.type !== 'LineString' || !Array.isArray(route.geometry.coordinates) || route.geometry.coordinates.length < 2) throw new Error('Bu noktalar arasında yol rotası bulunamadı.');
-  if (route.legs?.some((leg: { steps?: { mode: string }[] }) => leg.steps?.some(step => step.mode === 'ferry'))) throw new Error('Bu rota feribot içeriyor; kara yolu rotası doğrulanamadı.');
-  if (!route.geometry.coordinates.every((point: unknown) => Array.isArray(point) && point.length === 2 && point.every(Number.isFinite) && Math.abs(point[0]) <= 180 && Math.abs(point[1]) <= 90) || !Number.isFinite(route.distance) || !Number.isFinite(route.duration)) throw new Error('Geçersiz rota yanıtı.');
+  if (data.code !== 'Ok' || !route || route.geometry?.type !== 'LineString' || !Array.isArray(route.geometry.coordinates) || route.geometry.coordinates.length < 2) throw new Error('No road route was found between these points.');
+  if (route.legs?.some((leg: { steps?: { mode: string }[] }) => leg.steps?.some(step => step.mode === 'ferry'))) throw new Error('This route includes a ferry; a road-only route could not be verified.');
+  if (!route.geometry.coordinates.every((point: unknown) => Array.isArray(point) && point.length === 2 && point.every(Number.isFinite) && Math.abs(point[0]) <= 180 && Math.abs(point[1]) <= 90) || !Number.isFinite(route.distance) || !Number.isFinite(route.duration)) throw new Error('Invalid route response.');
   const result: Result = { points: route.geometry.coordinates.map(([lng, lat]: Point) => [lat, lng]), distance: route.distance, duration: route.duration, snappedDistance: data.waypoints?.[0]?.distance ?? 0 };
   cache.set(key, { expires: Date.now() + 3600000, result });
   return result;
@@ -42,12 +42,12 @@ function readPair(params: URLSearchParams): { key: string; start: Point; end: Po
   if (params.has('from') || params.has('to')) {
     const start = parsePoint(params.get('from'));
     const end = parsePoint(params.get('to'));
-    if (!start || !end) return Response.json({ error: 'Geçersiz koordinat. Enlem -90 ile 90, boylam -180 ile 180 arasında olmalıdır.' }, { status: 400 });
-    if (start[0] === end[0] && start[1] === end[1]) return Response.json({ error: 'Çıkış ve hedef aynı nokta. Yol rotası hesaplanamaz.' }, { status: 400 });
+    if (!start || !end) return Response.json({ error: 'Invalid coordinate. Latitude must be between -90 and 90, longitude between -180 and 180.' }, { status: 400 });
+    if (start[0] === end[0] && start[1] === end[1]) return Response.json({ error: 'Origin and destination are the same point. A road route cannot be calculated.' }, { status: 400 });
     return { key: `${start[0]},${start[1]};${end[0]},${end[1]}`, start, end };
   }
   const id = params.get('vehicle') ?? '';
-  if (!Object.hasOwn(trips, id)) return Response.json({ error: 'Araç için tanımlı rota bulunamadı.' }, { status: 400 });
+  if (!Object.hasOwn(trips, id)) return Response.json({ error: 'No route is defined for this vehicle.' }, { status: 400 });
   const [start, end] = trips[id];
   return { key: `vehicle:${id}`, start, end };
 }
@@ -67,6 +67,6 @@ export async function GET(request: Request) {
     }
     return Response.json(await work);
   } catch (error) {
-    return Response.json({ error: error instanceof Error && error.name !== 'TimeoutError' ? error.message : 'Rota servisi zaman aşımına uğradı.' }, { status: 503 });
+    return Response.json({ error: error instanceof Error && error.name !== 'TimeoutError' ? error.message : 'The routing service timed out.' }, { status: 503 });
   }
 }

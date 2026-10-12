@@ -10,10 +10,10 @@ export async function mockRoadRoutes(page: Page) {
     let lng: number;
     if (from) {
       const parts = from.split(',').map(Number);
-      if (parts.length !== 2 || parts.some(part => !Number.isFinite(part))) return route.fulfill({ status: 400, json: { error: 'Geçersiz koordinat.' } });
+      if (parts.length !== 2 || parts.some(part => !Number.isFinite(part))) return route.fulfill({ status: 400, json: { error: 'Invalid coordinate.' } });
       [lat, lng] = parts;
     } else if (id && starts[id]) [lat, lng] = starts[id];
-    else return route.fulfill({ status: 400, json: { error: 'Araç için tanımlı rota bulunamadı.' } });
+    else return route.fulfill({ status: 400, json: { error: 'No route is defined for this vehicle.' } });
     return route.fulfill({ json: { points: [[lat, lng], [lat + .001, lng], [lat + .001, lng + .002]], distance: 1250, duration: 180, snappedDistance: 0 } });
   });
 }

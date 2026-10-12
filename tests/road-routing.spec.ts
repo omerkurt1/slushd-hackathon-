@@ -3,7 +3,7 @@ import { mockRoadRoutes } from './route-fixture';
 
 test('rota servisi hatasında düz çizgi çizilmez ve tekrar deneme çalışır', async ({ page }) => {
   await page.route('**://tile.openstreetmap.org/**', route => route.abort());
-  await page.route('**/api/route?*', route => route.fulfill({ status: 503, json: { error: 'Yol rotası bulunamadı.' } }));
+  await page.route('**/api/route?*', route => route.fulfill({ status: 503, json: { error: 'No road route was found.' } }));
   await page.goto('/dispatcher');
   await expect(page.locator('.vehicle-route')).toHaveCount(0);
   await mockRoadRoutes(page);
@@ -23,11 +23,11 @@ test('araç değiştiğinde geç gelen eski rota gösterilmez', async ({ page })
     await route.fulfill({ json: { points: [[41.1, 29.2], [41.2, 29.3]], distance: 99999, duration: 9999, snappedDistance: 0 } }).catch(() => undefined);
   });
   await page.goto('/dispatcher');
-  await page.getByRole('button', { name: 'Boşta 1', exact: true }).click();
+  await page.getByRole('button', { name: 'Idle 1', exact: true }).click();
   await page.locator('.vehicle-card').click();
   release();
   await expect(page.locator('.vehicle-route')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Yolda 2', exact: true }).click();
+  await page.getByRole('button', { name: 'En route 2', exact: true }).click();
   await page.locator('.vehicle-card').first().click();
   await expect(page.locator('.vehicle-route')).toHaveCount(1);
 });

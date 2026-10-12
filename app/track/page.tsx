@@ -5,8 +5,8 @@ import { VitrinFooter, VitrinHeader } from '../vitrin-chrome';
 import '../vitrin.css';
 
 export const metadata: Metadata = {
-  title: 'SLUSHD | Sipariş takip',
-  description: 'Müşteri takip linki. Gönderi numarasıyla teslimat saati ve gecikme nedeni.',
+  title: 'SLUSHD | Shipment tracking',
+  description: 'Customer tracking link. Delivery time and delay reason by shipment number.',
 };
 
 export default function TrackIndexPage() {
@@ -16,11 +16,11 @@ export default function TrackIndexPage() {
       <main className="band">
         <div className="wrap">
           <div className="band-head">
-            <h1>Sipariş takip</h1>
-            <p className="lead">Müşteri linki /track/gönderi-no biçimindedir. Saat ve gecikme nedeni, operasyon konsolunun aynı tarayıcıda yazdığı demo kaydından okunur.</p>
+            <h1>Shipment tracking</h1>
+            <p className="lead">The customer link uses the form /track/shipment-number. Time and delay reason come from the demo record the operations console wrote in this browser.</p>
           </div>
           <TrackLookup />
-          <p className="fine">Örnek kayıt için önce <Link href="/dispatcher">yönetici girişini</Link> açın, ardından gönderi numarası olarak v1 kullanın. v1, 34 LOG 101 plakalı gecikme kaydıdır.</p>
+          <p className="fine">For a sample record, open the <Link href="/dispatcher">dispatcher</Link> first, then use v1 as the shipment number. v1 is the delay record for plate 34 LOG 101.</p>
         </div>
       </main>
       <VitrinFooter />

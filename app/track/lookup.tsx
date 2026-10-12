@@ -16,10 +16,10 @@ export function TrackLookup() {
 
   return (
     <form className="form" onSubmit={onSubmit}>
-      <label htmlFor="shipment-id">Gönderi numarası
+      <label htmlFor="shipment-id">Shipment number
         <input id="shipment-id" name="id" value={id} onChange={event => setId(event.target.value)} required />
       </label>
-      <button className="btn btn-primary" type="submit">Takip et</button>
+      <button className="btn btn-primary" type="submit">Track</button>
     </form>
   );
 }
