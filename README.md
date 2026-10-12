@@ -26,11 +26,12 @@ Her faz uygulanır, yerelde gösterilir ve kontrol edilir. Kullanıcı açıkça
 1. **Konsol temeli:** Beş örnek araç, öncelikli liste, durum filtreleri, plaka araması, seçili araç profili, Türkiye saati, açık tema. Onaylandı; `4fdab8f` commit'i main'e gönderildi.
 2. **Harita:** Leaflet/react-leaflet, OpenStreetMap açık harita katmanı, durum pinleri, acil durum nabzı ve flyTo. Faz 3 ile birlikte `1232bcb` commit'i main'e gönderildi.
 3. **Operasyon:** Sentetik Türkçe ses kaydı, örnek mesaj özeti, olay kaydı, depo bekleme süresi, tek seferlik ETA onayı, takip bağlantısı, telefon bağlantısı, olay kapatma ve fatura notu taslağı. Onaylandı; `1232bcb` commit'i main'e gönderildi.
-4. **Görev atama:** Çekmece formu, doğrulama, boşta araçtan yolda geçişi, koordinata bağlı yol rotası, takip kaydı ve tarayıcıda kalıcılık. Uygulandı; commit/push onayı bekliyor.
+4. **Görev atama:** Çekmece formu, doğrulama, boşta araçtan yolda geçişi, koordinata bağlı yol rotası, takip kaydı ve tarayıcıda kalıcılık. Onaylandı; `a608fb7` commit'i main'e gönderildi.
+5. **Kabul:** Plaka araması operasyon çubuğuna alındı. Liste, harita, olay özeti ve görev atama aynı seçimle çalışıyor. Yeni ürün kapsamı eklenmedi.
 
 ## Mevcut sınırlar
 
-Veriler açıkça etiketlenmiş simülasyondur. Gerçek GPS, backend, sürücü bildirimi veya AI servisi bağlı değildir. Görev atama yalnızca bu tarayıcıdaki demo kaydını günceller; sürücüye SMS veya uygulama bildirimi gitmez. Plaka araması listeyi süzer; Enter veya araç kartına tıklama seçimi ve harita odağını günceller. Pin seçimi liste filtresini temizleyip ortak araç seçimini günceller. Harita her zaman tüm filoyu tutar. Sayılar örnek araçlardan türetilir. Operasyon değişiklikleri ve depo giriş zamanı bu tarayıcının localStorage alanında saklanır; depolama engelliyse yalnızca açık sayfada kalır.
+Veriler açıkça etiketlenmiş simülasyondur. Gerçek GPS, backend, sürücü bildirimi veya AI servisi bağlı değildir. Görev atama yalnızca bu tarayıcıdaki demo kaydını günceller; sürücüye SMS veya uygulama bildirimi gitmez. Plaka araması operasyon çubuğundadır ve listeyi süzer; Enter veya araç kartına tıklama seçimi ve harita odağını günceller. Pin seçimi liste filtresini temizleyip ortak araç seçimini günceller. Harita her zaman tüm filoyu tutar. Sayılar örnek araçlardan türetilir. Operasyon değişiklikleri ve depo giriş zamanı bu tarayıcının localStorage alanında saklanır; depolama engelliyse yalnızca açık sayfada kalır.
 
 ## Operasyon demosu
 
@@ -44,7 +45,7 @@ Gecikme onayı ETA'yı 40 dakika artırır; tekrar uygulanamaz. Olay kapatma dur
 
 Terim standardı: `TERMINOLOGY.md`. Yeni ekranlar da bu sözlüğü takip eder.
 
-## Yol ağı rotası düzeltmesi (commit/push onayı bekliyor)
+## Yol ağı rotası
 
 Harita ekran görüntüsündeki standart renkli OpenStreetMap temasını kullanır; gri filtre kaldırılmıştır. İlk açılışta tüm filo, seçimde aracın yakın çevresi gösterilir. Tüm filo / Araca odaklan / Rotayı göster düğmeleri görünümü değiştirir.
 

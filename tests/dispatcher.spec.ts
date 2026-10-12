@@ -16,6 +16,7 @@ test('filtre, plaka arama ve araç profili senkron çalışır', async ({ page }
   await page.locator('.vehicle-card').click();
   await expect(page.getByTestId('selected-plate')).toHaveText('34 LOG 505');
   await expect(page.getByText('Bu araç şu anda aktif bir göreve sahip değil.')).toBeVisible();
+  await expect(page.locator('.workspace-bar').getByRole('textbox', { name: 'Plaka ara' })).toBeVisible();
   await page.getByRole('textbox', { name: 'Plaka ara' }).fill('34log308');
   await page.getByRole('textbox', { name: 'Plaka ara' }).press('Enter');
   await expect(page.getByTestId('selected-plate')).toHaveText('34 LOG 308');
